@@ -1,5 +1,7 @@
 require "paczkomaty_inpost/version"
+require "paczkomaty_inpost/inpost_request"
 
 module PaczkomatyInpost
-  # Your code goes here...
+
+  INPOST_API_URL = 'http://api.paczkomaty.pl'
 end
