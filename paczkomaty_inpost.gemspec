@@ -10,8 +10,8 @@ Gem::Specification.new do |gem|
   gem.summary       = %q{Gives access to Paczkomaty InPost API}
   gem.homepage      = ""
 
-  gem.executables   = gem.files.grep(%r{^bin/}).map{ |f| File.basename(f) }
   gem.files         = `git ls-files`.split($/)
+  gem.executables   = gem.files.grep(%r{^bin/}).map{ |f| File.basename(f) }
   gem.test_files    = gem.files.grep(%r{^(test|spec|features)/})
   gem.name          = "paczkomaty_inpost"
   gem.require_paths = ["lib"]
