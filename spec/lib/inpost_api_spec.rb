@@ -4,7 +4,7 @@ require 'spec_helper'
 describe PaczkomatyInpost::InpostAPI do
 
 
-  context 'check for environment options with invalid data' do
+  context "check for environment options with invalid data" do
 
     before do
       data_adapter = 'wrong data adapter object'
@@ -26,7 +26,7 @@ describe PaczkomatyInpost::InpostAPI do
   end
 
 
-  context 'check for environment options with valid data' do
+  context "check for environment options with valid data" do
 
     before do
       file_path = Dir::tmpdir
@@ -86,6 +86,51 @@ describe PaczkomatyInpost::InpostAPI do
       @api.params[:last_update] = 1000000000
       @api.inpost_cache_is_valid?.should equal(false)
     end
+  end
+
+
+  context "get machines list" do
+
+    before do
+      file_path = 'spec/assets'
+      PaczkomatyInpost::FileAdapter.any_instance.stub(:validate_path).and_return(true)
+      data_adapter = PaczkomatyInpost::FileAdapter.new(file_path)
+      request = PaczkomatyInpost::Request.new('test@testowy.pl','WqJevQy*X7')
+      @api = PaczkomatyInpost::InpostAPI.new(request,data_adapter)
+    end
+
+
+    it "should return list of all machines if no parameters given" do
+      machines = @api.inpost_get_machine_list
+
+      machines.length.should == 564
+    end
+
+    it "should return list of machines by town if given" do
+      machines = @api.inpost_get_machine_list('Gdynia')
+
+      machines.length.should == 7
+    end
+
+    it "should be case insensitive" do
+      machines = @api.inpost_get_machine_list('Gdynia')
+      lowercase_machines = @api.inpost_get_machine_list('gdynia')
+
+      machines.should == lowercase_machines
+    end
+
+    it "should return list of machines by paymentavailable if given" do
+      machines = @api.inpost_get_machine_list(nil,true)
+
+      machines.length.should == 377
+    end
+
+    it "should return list of machines by town and paymentavailable if both given" do
+      machines = @api.inpost_get_machine_list('Gdynia',true)
+
+      machines.length.should == 6
+    end
+
   end
 
 end

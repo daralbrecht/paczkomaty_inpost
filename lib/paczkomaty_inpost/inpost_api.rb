@@ -53,8 +53,22 @@ module PaczkomatyInpost
       data_adapter.save_data(data)
     end
 
-    def inpost_get_machine_list
+    def inpost_get_machine_list(town=nil,paymentavailable=nil)
+      cache = data_adapter.cached_data
+      result_list = []
+      cache.each do |machine|
+        if town && paymentavailable.nil?
+          result_list << machine if (machine['town'].downcase == town.downcase)
+        elsif town.nil? && !paymentavailable.nil?
+          result_list << machine if (machine['paymentavailable'] == paymentavailable)
+        elsif town && !paymentavailable.nil?
+          result_list << machine if ((machine['town'].downcase == town.downcase) && (machine['paymentavailable'] == paymentavailable))
+        else
+          result_list << machine
+        end
+      end
 
+      return result_list
     end
 
   end
