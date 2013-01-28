@@ -1,3 +1,4 @@
+# encoding: UTF-8
 require "net/https"
 require "uri"
 
@@ -5,36 +6,32 @@ module PaczkomatyInpost
 
   class InpostAPI
 
-    attr_accessor :params
+    attr_accessor :request, :data_adapter, :params
 
 
-    def initialize
-      self.params = {}
+    def initialize(request, data_adapter)
+      self.data_adapter = data_adapter
+      self.request = request
+      self.params = self.request.inpost_get_params if request.respond_to?(:inpost_get_params)
     end
-
 
     def inpost_check_environment(verbose = false)
       valid_options = true
       errors = [] if verbose
 
-      if PaczkomatyInpost.options[:data_path].nil? || !File.directory?(PaczkomatyInpost.options[:data_path])
+      unless data_adapter.respond_to?(:save_data) && data_adapter.respond_to?(:cached_data)
         valid_options = false
-        errors << 'Paczkomaty API: path to proper data directory must be set in PaczkomatyInpost.options' if verbose
+        errors << 'Paczkomaty API: użyty data adapter jest niekompatybilny z API' if verbose
       end
 
-      if PaczkomatyInpost.options[:data_path].nil? || !File.writable?(PaczkomatyInpost.options[:data_path])
+      if !request.respond_to?(:username) || request.username.nil?
         valid_options = false
-        errors << 'Paczkomaty API: data_path in PaczkomatyInpost.options must be writable!' if verbose
+        errors << 'Paczkomaty API: nazwa użytkownika musi być zapisana w PaczkomatyInpost::Request' if verbose
       end
 
-      if PaczkomatyInpost.options[:username].nil?
+      if !request.respond_to?(:password) || request.password.nil?
         valid_options = false
-        errors << 'Paczkomaty API: username must be set in PaczkomatyInpost.options' if verbose
-      end
-
-      if PaczkomatyInpost.options[:password].nil?
-        valid_options = false
-        errors << 'Paczkomaty API: password must be set in PaczkomatyInpost.options' if verbose
+        errors << 'Paczkomaty API: hasło musi być zapisane w PaczkomatyInpost::Request' if verbose
       end
 
       if verbose
@@ -44,17 +41,20 @@ module PaczkomatyInpost
       end
     end
 
+    def inpost_cache_is_valid?
+      request.inpost_get_params
+      data_adapter.last_update == params[:last_update]
+    end
 
-    def inpost_get_params
-      uri = URI.parse("#{PaczkomatyInpost.inpost_api_url}/?do=getparams")
-      response = Net::HTTP.get_response(uri)
-      xml_doc = Nokogiri::XML(response.body)
-      xml_doc.xpath('./paczkomaty/*').each do |param|
-        params[param.name.to_sym] = param.text
-      end
-      params[:current_api_version] = PaczkomatyInpost::VERSION
+    def inpost_update_machine_list
+      request.inpost_get_params
+      data = request.inpost_download_machines
+      data.insert(0, params[:last_update])
+      data_adapter.save_data(data)
+    end
 
-      return params
+    def inpost_get_machine_list
+
     end
 
   end
