@@ -56,16 +56,36 @@ module PaczkomatyInpost
     def inpost_get_machine_list(town=nil,paymentavailable=nil)
       cache = data_adapter.cached_data
       result_list = []
-      cache.each do |machine|
-        if town && paymentavailable.nil?
-          result_list << machine if (machine['town'].downcase == town.downcase)
-        elsif town.nil? && !paymentavailable.nil?
-          result_list << machine if (machine['paymentavailable'] == paymentavailable)
-        elsif town && !paymentavailable.nil?
-          result_list << machine if ((machine['town'].downcase == town.downcase) && (machine['paymentavailable'] == paymentavailable))
-        else
-          result_list << machine
+      unless cache.empty?
+        cache.each do |machine|
+          if town && paymentavailable.nil?
+            result_list << machine if (machine['town'].downcase == town.downcase)
+          elsif town.nil? && !paymentavailable.nil?
+            result_list << machine if (machine['paymentavailable'] == paymentavailable)
+          elsif town && !paymentavailable.nil?
+            result_list << machine if ((machine['town'].downcase == town.downcase) && (machine['paymentavailable'] == paymentavailable))
+          else
+            result_list << machine
+          end
         end
+      end
+
+      return result_list
+    end
+
+    def inpost_find_nearest_machines(postcode,paymentavailable=nil,test=false)
+      post_code = postcode.gsub(' ','')
+      nearest_machines = request.inpost_download_nearest_machines(post_code,paymentavailable)
+      cache = data_adapter.cached_data
+      result_list = []
+
+      unless nearest_machines.empty? || cache.empty?
+        nearest_machines.each_with_index do |machine, idx|
+          result_list << cache.detect {|c| c['name'] == machine[:name]}
+          return [] if result_list[idx].nil? # cache is out of date
+          result_list[idx]['distance'] = machine[:distance].to_f
+        end
+        result_list = result_list.sort_by {|k| k['distance']} unless result_list.empty?
       end
 
       return result_list

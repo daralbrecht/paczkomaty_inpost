@@ -129,6 +129,36 @@ describe PaczkomatyInpost::InpostAPI do
       machines = @api.inpost_get_machine_list('Gdynia',true)
 
       machines.length.should == 6
+
+      @api.inpost_find_nearest_machines('83-200', true)
+    end
+
+    it "should return list of 3 nearest machines if postcode given" do
+      machines = @api.inpost_find_nearest_machines('83-200')
+
+      machines.length.should == 3
+    end
+
+    it "should return list of 3 nearest machines sorted by distance" do
+      machines = @api.inpost_find_nearest_machines('83-200')
+
+      machines[0]['distance'].should < machines[1]['distance']
+      machines[1]['distance'].should < machines[2]['distance']
+    end
+
+    it "should return list of 3 nearest machines by paymentavailable if given" do
+      machines_with_payment_available = @api.inpost_find_nearest_machines('76-200',true)
+      machines_without_payment_available = @api.inpost_find_nearest_machines('76-200',false,true)
+
+      machines_with_payment_available.should_not == machines_without_payment_available
+      machines_with_payment_available.map{|machine| machine['paymentavailable']}.uniq[0].should eq(true)
+      machines_without_payment_available.map{|machine| machine['paymentavailable']}.uniq[0].should eq(false)
+    end
+
+    it "should return empty list if wrong postcode given" do
+      machines = @api.inpost_find_nearest_machines('very bad postcode')
+
+      machines.should == []
     end
 
   end

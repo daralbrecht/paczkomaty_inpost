@@ -21,4 +21,5 @@ Gem::Specification.new do |gem|
   gem.add_development_dependency 'rspec'
 
   gem.add_dependency 'nokogiri'
+  gem.add_dependency 'json'
 end

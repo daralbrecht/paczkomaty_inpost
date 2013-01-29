@@ -29,13 +29,13 @@ module PaczkomatyInpost
     end
 
     def inpost_download_machines
+      machines = []
       uri = URI.parse("#{PaczkomatyInpost.inpost_api_url}/?do=listmachines_csv")
       response = Net::HTTP.get_response(uri)
-      csv_content = response.body.gsub('"',"'").force_encoding('UTF-8')
+      csv_content = response.body.gsub('"',"'").to_my_utf8
       csv = CSV.parse(csv_content, :row_sep => :auto, :col_sep => ";")
       # TODO: Add checksum test
       unless csv.empty?
-        machines = []
         csv.shift # removing checksum from array
         csv.each do |item|
           machine = {
@@ -59,6 +59,37 @@ module PaczkomatyInpost
 
         return machines
       end
+    end
+
+    def inpost_download_nearest_machines(postcode,paymentavailable=nil)
+      machines = []
+      payment_available = ''
+      unless paymentavailable.nil?
+        payment_available = "&paymentavailable=#{paymentavailable ? 't' : 'f'}"
+      end
+
+      uri = URI.parse("#{PaczkomatyInpost.inpost_api_url}/?do=findnearestmachines&postcode=#{postcode}#{payment_available}")
+      response = Net::HTTP.get_response(uri)
+      xml_content = response.body.gsub('"',"'").to_my_utf8
+      xml = Nokogiri::XML(xml_content)
+      xml_machines = xml.css('machine')
+      unless xml_machines.empty?
+        xml_machines.each do |item|
+          machine = {
+            :name => item.css('name').text,
+            :postcode => item.css('postcode').text,
+            :street => item.css('street').text,
+            :buildingnumber => item.css('buildingnumber').text,
+            :town => item.css('town').text,
+            :latitude => item.css('latitude').text,
+            :longitude => item.css('longitude').text,
+            :distance => item.css('distance').text
+          }
+          machines << machine
+        end
+      end
+
+      return machines
     end
 
   end
