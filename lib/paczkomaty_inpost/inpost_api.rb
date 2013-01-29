@@ -115,5 +115,9 @@ module PaczkomatyInpost
       return result_list
     end
 
+    def inpost_find_customer(email)
+      request.inpost_download_customer_preferences(email)
+    end
+
   end
 end

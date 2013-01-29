@@ -255,4 +255,26 @@ describe PaczkomatyInpost::InpostAPI do
     end
   end
 
+
+  context 'inpost_find_customer' do
+
+    before do
+      data_adapter = PaczkomatyInpost::FileAdapter.new('spec/assets')
+      request = PaczkomatyInpost::Request.new('test@testowy.pl','WqJevQy*X7')
+      @api = PaczkomatyInpost::InpostAPI.new(request,data_adapter)
+    end
+
+    it "should return user preferences given registered email" do
+      preferences = @api.inpost_find_customer('test01@paczkomaty.pl')
+
+      preferences.should == {"preferedBoxMachineName"=>"KRA010", "alternativeBoxMachineName"=>"AND039"}
+    end
+
+    it "should return error message when user not found" do
+      preferences = @api.inpost_find_customer('paczkomaty_test@example.com')
+
+      preferences.should == {"error"=>{"OtherException"=>"Klient nie istnieje paczkomaty_test@example.com"}}
+    end
+  end
+
 end

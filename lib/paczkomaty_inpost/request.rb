@@ -120,6 +120,22 @@ module PaczkomatyInpost
       return pricelist
     end
 
+    def inpost_download_customer_preferences(email)
+      preferences = {}
+
+      xml_content = get_response("/?do=findcustomer&email=#{email}")
+      xml = Nokogiri::XML(xml_content)
+
+      xml_customer = xml.css('customer')
+      if xml_customer.empty?
+        preferences['error'] = {xml.css('error').attribute('key').value => xml.css('error').text}
+      else
+        preferences['preferedBoxMachineName'] = xml_customer.css('preferedBoxMachineName').text
+        preferences['alternativeBoxMachineName'] = xml_customer.css('alternativeBoxMachineName').text
+      end
+
+      return preferences
+    end
 
     private
 
