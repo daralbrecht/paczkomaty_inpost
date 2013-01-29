@@ -89,7 +89,7 @@ describe PaczkomatyInpost::InpostAPI do
   end
 
 
-  context "get machines list" do
+  context "inpost_get_machine_list" do
 
     before do
       file_path = 'spec/assets'
@@ -132,6 +132,18 @@ describe PaczkomatyInpost::InpostAPI do
 
       @api.inpost_find_nearest_machines('83-200', true)
     end
+  end
+
+
+  context "inpost_find_nearest_machines" do
+
+    before do
+      file_path = 'spec/assets'
+      PaczkomatyInpost::FileAdapter.any_instance.stub(:validate_path).and_return(true)
+      data_adapter = PaczkomatyInpost::FileAdapter.new(file_path)
+      request = PaczkomatyInpost::Request.new('test@testowy.pl','WqJevQy*X7')
+      @api = PaczkomatyInpost::InpostAPI.new(request,data_adapter)
+    end
 
     it "should return list of 3 nearest machines if postcode given" do
       machines = @api.inpost_find_nearest_machines('83-200')
@@ -160,7 +172,6 @@ describe PaczkomatyInpost::InpostAPI do
 
       machines.should == []
     end
-
   end
 
 end

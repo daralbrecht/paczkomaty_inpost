@@ -30,9 +30,10 @@ module PaczkomatyInpost
 
     def inpost_download_machines
       machines = []
-      uri = URI.parse("#{PaczkomatyInpost.inpost_api_url}/?do=listmachines_csv")
-      response = Net::HTTP.get_response(uri)
-      csv_content = response.body.gsub('"',"'").to_my_utf8
+
+      params = "/?do=listmachines_csv"
+      csv_content = get_response(params)
+
       csv = CSV.parse(csv_content, :row_sep => :auto, :col_sep => ";")
       # TODO: Add checksum test
       unless csv.empty?
@@ -68,10 +69,10 @@ module PaczkomatyInpost
         payment_available = "&paymentavailable=#{paymentavailable ? 't' : 'f'}"
       end
 
-      uri = URI.parse("#{PaczkomatyInpost.inpost_api_url}/?do=findnearestmachines&postcode=#{postcode}#{payment_available}")
-      response = Net::HTTP.get_response(uri)
-      xml_content = response.body.gsub('"',"'").to_my_utf8
+      params = "/?do=findnearestmachines&postcode=#{postcode}#{payment_available}"
+      xml_content = get_response(params)
       xml = Nokogiri::XML(xml_content)
+
       xml_machines = xml.css('machine')
       unless xml_machines.empty?
         xml_machines.each do |item|
@@ -92,5 +93,13 @@ module PaczkomatyInpost
       return machines
     end
 
+
+    private
+
+    def get_response(params)
+      uri = URI.parse("#{PaczkomatyInpost.inpost_api_url}#{params}")
+      response = Net::HTTP.get_response(uri)
+      return response.body.gsub('"',"'").to_my_utf8
+    end
   end
 end
