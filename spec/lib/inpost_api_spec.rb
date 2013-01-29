@@ -189,6 +189,33 @@ describe PaczkomatyInpost::InpostAPI do
   end
 
 
+  context "inpost_get_towns" do
+
+    before do
+      PaczkomatyInpost::FileAdapter.any_instance.stub(:validate_path).and_return(true)
+      @request = PaczkomatyInpost::Request.new('test@testowy.pl','WqJevQy*X7')
+    end
+
+    it "should return list of towns from cached machines" do
+      data_adapter = PaczkomatyInpost::FileAdapter.new('spec/assets')
+      @api = PaczkomatyInpost::InpostAPI.new(@request,data_adapter)
+
+      towns = @api.inpost_get_towns
+
+      towns.first.should == 'Aleksandrów Łódzki'
+      towns.length.should == 186
+    end
+
+    it "should return empty list if cached machines missing" do
+      data_adapter = PaczkomatyInpost::FileAdapter.new('spec')
+      @api = PaczkomatyInpost::InpostAPI.new(@request,data_adapter)
+
+      towns = @api.inpost_get_towns
+      towns.should == []
+    end
+  end
+
+
   context "inpost_find_nearest_machines" do
 
     before do

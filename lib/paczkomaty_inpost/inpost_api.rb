@@ -89,6 +89,14 @@ module PaczkomatyInpost
       data_adapter.cached_prices
     end
 
+    def inpost_get_towns
+      towns = []
+      cache = data_adapter.cached_machines
+      towns = cache.map{|item| item['town']}.compact.uniq.sort unless cache.empty?
+
+      return towns
+    end
+
     def inpost_find_nearest_machines(postcode,paymentavailable=nil,test=false)
       post_code = postcode.gsub(' ','')
       nearest_machines = request.inpost_download_nearest_machines(post_code,paymentavailable)
