@@ -19,7 +19,9 @@ module PaczkomatyInpost
       valid_options = true
       errors = [] if verbose
 
-      unless data_adapter.respond_to?(:save_data) && data_adapter.respond_to?(:cached_data)
+      unless data_adapter.respond_to?(:save_machine_list) && data_adapter.respond_to?(:cached_machines) &&
+              data_adapter.respond_to?(:save_price_list) && data_adapter.respond_to?(:cached_prices) &&
+              data_adapter.respond_to?(:last_update_machines) && data_adapter.respond_to?(:last_update_prices)
         valid_options = false
         errors << 'Paczkomaty API: użyty data adapter jest niekompatybilny z API' if verbose
       end
@@ -41,20 +43,30 @@ module PaczkomatyInpost
       end
     end
 
-    def inpost_cache_is_valid?
+    def inpost_machines_cache_is_valid?
       request.inpost_get_params
-      data_adapter.last_update == params[:last_update]
+      data_adapter.last_update_machines == params[:last_update]
+    end
+
+    def inpost_prices_cache_is_valid?
+      request.inpost_get_params
+      data_adapter.last_update_prices == params[:last_update]
     end
 
     def inpost_update_machine_list
       request.inpost_get_params
       data = request.inpost_download_machines
-      data.insert(0, params[:last_update])
-      data_adapter.save_data(data)
+      data_adapter.save_machine_list(data, params[:last_update])
+    end
+
+    def inpost_update_price_list
+      request.inpost_get_params
+      data = request.inpost_download_pricelist
+      data_adapter.save_price_list(data, params[:last_update])
     end
 
     def inpost_get_machine_list(town=nil,paymentavailable=nil)
-      cache = data_adapter.cached_data
+      cache = data_adapter.cached_machines
       result_list = []
       unless cache.empty?
         cache.each do |machine|
@@ -73,10 +85,14 @@ module PaczkomatyInpost
       return result_list
     end
 
+    def inpost_get_pricelist
+      data_adapter.cached_prices
+    end
+
     def inpost_find_nearest_machines(postcode,paymentavailable=nil,test=false)
       post_code = postcode.gsub(' ','')
       nearest_machines = request.inpost_download_nearest_machines(post_code,paymentavailable)
-      cache = data_adapter.cached_data
+      cache = data_adapter.cached_machines
       result_list = []
 
       unless nearest_machines.empty? || cache.empty?

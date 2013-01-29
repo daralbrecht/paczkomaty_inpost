@@ -13,26 +13,57 @@ module PaczkomatyInpost
       validate_path
     end
 
-    def save_data(data)
+    def save_machine_list(data, last_update)
       File.open(File.join(data_path, 'machines.dat'), 'w') do |f|
         f.write data.to_json
       end
+
+      File.open(File.join(data_path, 'machines_date.dat'), 'w') do |f|
+        f.write last_update
+      end
     end
 
-    def cached_data
+    def save_price_list(data, last_update)
+      File.open(File.join(data_path, 'prices.dat'), 'w') do |f|
+        f.write data.to_json
+      end
+
+      File.open(File.join(data_path, 'prices_date.dat'), 'w') do |f|
+        f.write last_update
+      end
+    end
+
+    def cached_machines
       data = []
       if File.exist?(File.join(data_path, 'machines.dat'))
         data = JSON.parse(File.read(data_path + 'machines.dat'))
-        data.shift
       end
 
       return data
     end
 
-    def last_update
+    def cached_prices
+      data = []
+      if File.exist?(File.join(data_path, 'prices.dat'))
+        data = JSON.parse(File.read(data_path + 'prices.dat'))
+      end
+
+      return data
+    end
+
+    def last_update_machines
       data = 0
-      if File.exist?(File.join(data_path, 'machines.dat'))
-        data = JSON.parse(File.read(data_path + 'machines.dat'))[0]
+      if File.exist?(File.join(data_path, 'machines_date.dat'))
+        data = File.read(data_path + 'machines_date.dat')
+      end
+
+      return data
+    end
+
+    def last_update_prices
+      data = 0
+      if File.exist?(File.join(data_path, 'prices_date.dat'))
+        data = File.read(data_path + 'prices_date.dat')
       end
 
       return data

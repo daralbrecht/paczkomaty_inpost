@@ -31,8 +31,7 @@ module PaczkomatyInpost
     def inpost_download_machines
       machines = []
 
-      params = "/?do=listmachines_csv"
-      csv_content = get_response(params)
+      csv_content = get_response("/?do=listmachines_csv")
 
       csv = CSV.parse(csv_content, :row_sep => :auto, :col_sep => ";")
       # TODO: Add checksum test
@@ -69,8 +68,7 @@ module PaczkomatyInpost
         payment_available = "&paymentavailable=#{paymentavailable ? 't' : 'f'}"
       end
 
-      params = "/?do=findnearestmachines&postcode=#{postcode}#{payment_available}"
-      xml_content = get_response(params)
+      xml_content = get_response("/?do=findnearestmachines&postcode=#{postcode}#{payment_available}")
       xml = Nokogiri::XML(xml_content)
 
       xml_machines = xml.css('machine')
@@ -91,6 +89,35 @@ module PaczkomatyInpost
       end
 
       return machines
+    end
+
+    def inpost_download_pricelist
+      pricelist = {}
+
+      xml_content = get_response("/?do=pricelist")
+      xml = Nokogiri::XML(xml_content)
+
+      pricelist['on_delivery_payment'] = xml.css('on_delivery_payment').text unless xml.css('on_delivery_payment').text.nil?
+      pricelist['on_delivery_percentage'] = xml.css('on_delivery_percentage').text unless xml.css('on_delivery_percentage').text.nil?
+      pricelist['on_delivery_limit'] = xml.css('on_delivery_limit').text unless xml.css('on_delivery_limit').text.nil?
+
+      xml_packtypes = xml.css('packtype')
+      unless xml_packtypes.empty?
+        xml_packtypes.each do |item|
+          pricelist[item.css('type').text] = item.css('price').text
+        end
+      end
+
+      xml_insurances = xml.css('insurance')
+      unless xml_insurances.empty?
+        insurances = {}
+        xml_insurances.each do |item|
+          insurances[item.css('limit').text] = item.css('price').text
+        end
+        pricelist['insurance'] = insurances unless insurances.empty?
+      end
+
+      return pricelist
     end
 
 
