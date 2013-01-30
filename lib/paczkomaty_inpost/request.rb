@@ -2,6 +2,8 @@
 require "net/https"
 require "uri"
 require "csv"
+require 'base64'
+require 'digest/md5'
 
 module PaczkomatyInpost
 
@@ -136,6 +138,7 @@ module PaczkomatyInpost
 
       return preferences
     end
+
 
     private
 

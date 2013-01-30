@@ -119,5 +119,27 @@ module PaczkomatyInpost
       request.inpost_download_customer_preferences(email)
     end
 
+    def inpost_prepare_pack(temp_id, adresee_email, phone_num, box_machine_name, alternative_box_machine_name,
+                            pack_type, insurance_amount, on_delivery_amount, customer_ref, sender_address,
+                            customer_delivering=nil, sender_box_machine_name=nil)
+      pack = PaczkomatyInpost::InpostPack.new(:temp_id => temp_id,
+                                              :adresee_email => adresee_email,
+                                              :sender_email => request.username,
+                                              :phone_num => phone_num,
+                                              :box_machine_name => box_machine_name,
+                                              :alternative_box_machine_name => alternative_box_machine_name,
+                                              :customer_delivering => customer_delivering,
+                                              :sender_box_machine_name => sender_box_machine_name,
+                                              :pack_type => pack_type,
+                                              :insurance_amount => insurance_amount,
+                                              :on_delivery_amount => on_delivery_amount,
+                                              :customer_ref => customer_ref,
+                                              :sender_address => sender_address)
+      raise "Invalid or missing parameters given when creating inpost pack." unless pack.valid?
+
+      return pack
+    end
+
+
   end
 end

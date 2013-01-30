@@ -277,4 +277,32 @@ describe PaczkomatyInpost::InpostAPI do
     end
   end
 
+
+  context 'inpost_prepare_pack' do
+
+    before do
+      data_adapter = PaczkomatyInpost::FileAdapter.new('spec/assets')
+      request = PaczkomatyInpost::Request.new('test@testowy.pl','WqJevQy*X7')
+      @api = PaczkomatyInpost::InpostAPI.new(request,data_adapter)
+    end
+
+    it "should return pack ready to send if valid paramteres given" do
+      sender = {:name => 'Sender', :surname => 'Tester', :email => 'test@testowy.pl', :phone_num => '578937487',
+                :street => 'Test Street', :building_no => '12', :flat_no => nil, :town => 'Test City',
+                :zip_code => '67-248', :province => 'pomorskie'}
+      pack = @api.inpost_prepare_pack('pack_1', 'test01@paczkomaty.pl', '501892456', 'KRA010', 'AND039',
+                            'B', '1.5', '10.99', 'testowa przesyłka', sender)
+
+      pack.valid?.should eq(true)
+    end
+
+    it "should throw error if invalid paramteres given" do
+      sender = 'I am sender!'
+      lambda { @api.inpost_prepare_pack('pack_1', 'test01@paczkomaty.pl', '501892456', 'KRA010', 'AND039',
+                            'B', '1.5', '10.99', 'testowa przesyłka', sender) }.should raise_error(RuntimeError)
+
+    end
+
+  end
+
 end

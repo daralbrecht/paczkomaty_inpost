@@ -22,4 +22,5 @@ Gem::Specification.new do |gem|
 
   gem.add_dependency 'nokogiri'
   gem.add_dependency 'json'
+  gem.add_dependency 'activemodel'
 end
