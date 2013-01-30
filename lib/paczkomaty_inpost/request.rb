@@ -4,6 +4,8 @@ require "uri"
 require "csv"
 require 'base64'
 require 'digest/md5'
+require 'builder'
+require 'rack'
 
 module PaczkomatyInpost
 
@@ -139,6 +141,88 @@ module PaczkomatyInpost
       return preferences
     end
 
+    def inpost_sends_packs(packs_data, auto_labels=1, self_send=0)
+      sended_packs = {}
+      api_url = PaczkomatyInpost.inpost_api_url.gsub('http://', 'https://')
+      digest = Base64.encode64(Digest::MD5.digest(password))
+
+      xml_packs_data = generate_xml_for_data_packs(packs_data, auto_labels, self_send)
+
+      params = {:email => username, :digest => digest.chomp, :content => xml_packs_data.target!}
+      data = http_build_query(params)
+
+      xml_response = get_https_response(data,'/?do=createdeliverypacks')
+      xml = Nokogiri::XML(xml_response)
+      xml_packs = xml.css('pack')
+      if xml_packs.empty?
+        sended_packs['error'] = {xml.css('error').attribute('key').value => xml.css('error').text} unless xml.css('error').empty?
+      else
+        xml_packs.each do |pack|
+          pack_info = {}
+          pack_id = pack.css('id').text
+          pack_info['packcode'] = pack.css('packcode').text unless pack.css('packcode').text.empty?
+          pack_info['calculatedcharge'] = pack.css('calculatedcharge').text unless pack.css('calculatedcharge').text.empty?
+          pack_info['customerdeliveringcode'] = pack.css('customerdeliveringcode').text unless pack.css('customerdeliveringcode').text.empty?
+          pack_info['error_key'] = pack.css('error').attribute('key').value unless pack.css('error').empty?
+          pack_info['error_message'] = pack.css('error').text unless pack.css('error').text.empty?
+
+          sended_packs[pack_id] = pack_info
+        end
+      end
+
+      return sended_packs
+    end
+
+    def generate_xml_for_data_packs(packs_data, auto_labels, self_send)
+      xml = Builder::XmlMarkup.new
+
+      xml.paczkomaty do
+        xml.autoLabels auto_labels
+        xml.selfSend self_send
+        if packs_data.kind_of?(Array)
+          packs_data.each {|pack|  xml = generate_xml_pack(xml,pack)}
+        else
+          xml = generate_xml_pack(xml,packs_data)
+        end
+      end
+
+      return xml
+    end
+
+    def generate_xml_pack(xml,pack)
+      xml.pack do
+        xml.id pack.temp_id
+        xml.adreseeEmail pack.adresee_email
+        xml.senderEmail pack.sender_email
+        xml.phoneNum pack.phone_num
+        xml.boxMachineName pack.box_machine_name
+        xml.alternativeBoxMachineName pack.alternative_box_machine_name unless pack.alternative_box_machine_name.nil?
+        xml.packType pack.pack_type
+        xml.customerDelivering(pack.customer_delivering.nil? ? false : pack.customer_delivering)
+        xml.insuranceAmount pack.insurance_amount
+        xml.onDeliveryAmount pack.on_delivery_amount
+        xml.customerRef pack.customer_ref unless pack.customer_ref.nil?
+        xml.senderBoxMachineName pack.sender_box_machine_name unless pack.sender_box_machine_name.nil?
+        unless pack.sender_address.nil? || pack.sender_address.empty?
+          xml.senderAddress do
+            xml.name pack.sender_address[:name] unless pack.sender_address[:name]
+            xml.surName pack.sender_address[:surname] unless pack.sender_address[:surname]
+            xml.email pack.sender_address[:email] unless pack.sender_address[:email]
+            xml.phoneNum pack.sender_address[:phone_num] unless pack.sender_address[:phone_num]
+            xml.street pack.sender_address[:street] unless pack.sender_address[:street]
+            xml.buildingNo pack.sender_address[:building_no] unless pack.sender_address[:building_no]
+            xml.flatNo pack.sender_address[:flat_no] unless pack.sender_address[:flat_no]
+            xml.town pack.sender_address[:town] unless pack.sender_address[:town]
+            xml.zipCode pack.sender_address[:zip_code] unless pack.sender_address[:zip_code]
+            xml.province pack.sender_address[:province] unless pack.sender_address[:province]
+          end
+        end
+      end
+
+      return xml
+    end
+
+
 
     private
 
@@ -146,6 +230,24 @@ module PaczkomatyInpost
       uri = URI.parse("#{PaczkomatyInpost.inpost_api_url}#{params}")
       response = Net::HTTP.get_response(uri)
       return response.body.gsub('"',"'").to_my_utf8
+    end
+
+    def get_https_response(params,path)
+      http = Net::HTTP.new(PaczkomatyInpost.inpost_api_url.gsub('http://',''), 443)
+      http.use_ssl = true
+      headers = {'Content-Type'=> 'application/x-www-form-urlencoded'}
+      response = http.post(path, params, headers)
+
+      return response.body.gsub('"',"'").to_my_utf8
+    end
+
+    def http_build_query(data)
+      params = []
+      data.each do |k,v|
+        params << "#{Rack::Utils.escape(k)}=#{Rack::Utils.escape(v)}"
+      end
+
+      return params.join('&')
     end
   end
 end

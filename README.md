@@ -6,7 +6,6 @@ Missing methods:
 - inpost_get_pack_status(packcode)
 - inpost_machines_dropdown(param)
 - inpost_create_customer_partner(email, password, customerData)
-- inpost_send_packs(email, password, packsData, autoLabels, selfSend)
 - inpost_get_sticker(email, password, packCode, labelType)
 - inpost_cancel_pack(email, password, packCode)
 - inpost_change_packsize(email, password, packCode, packSize)

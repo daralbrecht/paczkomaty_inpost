@@ -119,9 +119,8 @@ module PaczkomatyInpost
       request.inpost_download_customer_preferences(email)
     end
 
-    def inpost_prepare_pack(temp_id, adresee_email, phone_num, box_machine_name, alternative_box_machine_name,
-                            pack_type, insurance_amount, on_delivery_amount, customer_ref, sender_address,
-                            customer_delivering=nil, sender_box_machine_name=nil)
+    def inpost_prepare_pack(temp_id, adresee_email, phone_num, box_machine_name, pack_type, insurance_amount, on_delivery_amount, customer_ref=nil,
+                            alternative_box_machine_name=nil, sender_address=nil, customer_delivering=nil, sender_box_machine_name=nil)
       pack = PaczkomatyInpost::InpostPack.new(:temp_id => temp_id,
                                               :adresee_email => adresee_email,
                                               :sender_email => request.username,
@@ -140,6 +139,9 @@ module PaczkomatyInpost
       return pack
     end
 
+    def inpost_send_packs(packsData, autoLabels=1, selfSend=0)
+      request.inpost_sends_packs(packsData, autoLabels=1, selfSend=0)
+    end
 
   end
 end

@@ -290,17 +290,71 @@ describe PaczkomatyInpost::InpostAPI do
       sender = {:name => 'Sender', :surname => 'Tester', :email => 'test@testowy.pl', :phone_num => '578937487',
                 :street => 'Test Street', :building_no => '12', :flat_no => nil, :town => 'Test City',
                 :zip_code => '67-248', :province => 'pomorskie'}
-      pack = @api.inpost_prepare_pack('pack_1', 'test01@paczkomaty.pl', '501892456', 'KRA010', 'AND039',
-                            'B', '1.5', '10.99', 'testowa przesyłka', sender)
+      pack = @api.inpost_prepare_pack('pack_1', 'test01@paczkomaty.pl', '501892456', 'KRA010',
+                            'B', '1.5', '10.99', 'testowa przesyłka', nil, sender)
 
       pack.valid?.should eq(true)
     end
 
     it "should throw error if invalid paramteres given" do
       sender = 'I am sender!'
-      lambda { @api.inpost_prepare_pack('pack_1', 'test01@paczkomaty.pl', '501892456', 'KRA010', 'AND039',
-                            'B', '1.5', '10.99', 'testowa przesyłka', sender) }.should raise_error(RuntimeError)
+      lambda { @api.inpost_prepare_pack('pack_1', 'test01@paczkomaty.pl', '501892456', 'KRA010',
+                            'B', '1.5', '10.99', 'testowa przesyłka', nil, sender) }.should raise_error(RuntimeError)
 
+    end
+
+  end
+
+
+  context 'inpost_send_packs' do
+
+    before do
+      sender = {:name => 'Sender', :surname => 'Tester', :email => 'test@testowy.pl', :phone_num => '578937487',
+                :street => 'Test Street', :building_no => '12', :flat_no => nil, :town => 'Test City',
+                :zip_code => '67-248', :province => 'pomorskie'}
+      data_adapter = PaczkomatyInpost::FileAdapter.new('spec/assets')
+      request = PaczkomatyInpost::Request.new('test@testowy.pl','WqJevQy*X7')
+      @api = PaczkomatyInpost::InpostAPI.new(request,data_adapter)
+      @pack_1 = @api.inpost_prepare_pack('pack_1', 'test01@paczkomaty.pl', '501892456', 'KRA010',
+                            'B', '1.5', '10.99', 'testowa przesyłka', nil, sender)
+      @pack_2 = @api.inpost_prepare_pack('pack_2', 'test04@paczkomaty.pl', '501892456', 'KRA010',
+                            'B', '1.5', '10.99', 'testowa przesyłka', 'BBI233', sender)
+      @pack_3 = @api.inpost_prepare_pack('pack_3', 'test03@paczkomaty.pl', '501892456', 'KRA010',
+                            'B', '1.5', '10.99', 'testowa przesyłka')
+      @invalid_pack = @api.inpost_prepare_pack('invalid_pack', 'test02@paczkomaty.pl', '501892456', 'KR0',
+                            'D', '1.4', '11.99', 'testowa przesyłka', nil, sender)
+    end
+
+    it "should return array with given packcode for sended pack" do
+      response = @api.inpost_send_packs(@pack_1)
+
+      response.values_at("pack_1").should_not include(nil)
+      response['pack_1'].values_at("packcode").should_not include(nil)
+    end
+
+    it "should return array with given packcodes for sended packs" do
+      response = @api.inpost_send_packs([@pack_1, @pack_2, @pack_3])
+
+      response.values_at("pack_1", "pack_2", "pack_3").should_not include(nil)
+      response['pack_1'].values_at("packcode").should_not include(nil)
+      response['pack_2'].values_at("packcode").should_not include(nil)
+      response['pack_3'].values_at("packcode").should_not include(nil)
+    end
+
+    it "should return array with given packcodes and errors if any pack was invalid" do
+      response = @api.inpost_send_packs([@pack_1, @invalid_pack])
+
+      response.values_at("pack_1", "invalid_pack").should_not include(nil)
+      response['pack_1'].values_at("packcode").should_not include(nil)
+      response['invalid_pack'].values_at("error_key", "error_message").should_not include(nil)
+    end
+
+    it "should return error key and message if sending packs was unsuccessful" do
+      @api.request.username = 'bad username'
+      response = @api.inpost_send_packs(@pack_1)
+
+      response['error'].should_not == nil
+      response['pack_1'].should == nil
     end
 
   end
