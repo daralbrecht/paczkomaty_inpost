@@ -521,4 +521,47 @@ describe PaczkomatyInpost::InpostAPI do
       ref_status.should == 'No delivery pack with code: invalid'
     end
   end
+
+
+  context 'inpost_get_sticker' do
+
+    before do
+      data_adapter = PaczkomatyInpost::FileAdapter.new('spec/assets')
+      request = PaczkomatyInpost::Request.new('test@testowy.pl','WqJevQy*X7')
+      @api = PaczkomatyInpost::InpostAPI.new(request,data_adapter)
+      pack = @api.inpost_prepare_pack('pack_1', 'test01@paczkomaty.pl', '501892456', 'KRA010',
+                            'A', '1.50', '9.99', 'testowa przesyłka')
+      response = @api.inpost_send_packs(pack)
+      @packcode = response['pack_1']['packcode']
+    end
+
+    it "should save sticker into pdf file at given path with packcode used as filename and return true" do
+      sticker_status = @api.inpost_get_sticker(@packcode,Dir::tmpdir)
+
+      sticker_status.should eq(true)
+      File.exist?(File.join(Dir::tmpdir, "#{@packcode}.pdf")).should eq(true)
+    end
+
+    it "should save sticker into pdf file at data_path if no path given" do
+      sticker_status = @api.inpost_get_sticker(@packcode)
+
+      sticker_status.should eq(true)
+      File.exist?(File.join(@api.data_adapter.data_path, "#{@packcode}.pdf")).should eq(true)
+
+      File.delete(File.join(@api.data_adapter.data_path, "#{@packcode}.pdf"))
+    end
+
+    it "should return false if packode given is empty" do
+      sticker_status = @api.inpost_get_sticker('')
+
+      sticker_status.should eq(false)
+    end
+
+    it "should return error message if invalid parameter given" do
+      sticker_status = @api.inpost_get_sticker('invalid')
+
+      sticker_status.should == 'Parcels with codes [invalid] not found'
+    end
+  end
+
 end

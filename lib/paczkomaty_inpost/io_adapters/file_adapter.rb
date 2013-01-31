@@ -10,7 +10,7 @@ module PaczkomatyInpost
     def initialize(data_path)
       self.data_path = Pathname.new(data_path)
 
-      validate_path
+      validate_path(self.data_path)
     end
 
     def save_machine_list(data, last_update)
@@ -69,15 +69,30 @@ module PaczkomatyInpost
       return data
     end
 
+    def save_sticker(sticker,packcode,path=nil)
+      if path.nil? || path.empty?
+        sticker_path = data_path
+      else
+        sticker_path = Pathname.new(path)
+        validate_path(sticker_path)
+      end
+
+      File.open(File.join(sticker_path, "#{packcode}.pdf"), 'w') do |f|
+        f.write sticker
+      end
+
+      return true
+    end
+
 
     private
 
-    def validate_path
-      if data_path.nil? || !data_path.directory?
+    def validate_path(path)
+      if path.nil? || !path.directory?
         raise Errno::ENOENT, "Invalid path given"
       end
 
-      if data_path.nil? || !data_path.writable?
+      if path.nil? || !path.writable?
         raise Errno::EACCES, "Given path is not writeable"
       end
     end

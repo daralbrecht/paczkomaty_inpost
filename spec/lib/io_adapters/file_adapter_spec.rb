@@ -59,7 +59,6 @@ describe PaczkomatyInpost::FileAdapter do
 
           content.should == "[{\"name\":\"ALL992\",\"street\":\"Piłsudskiego\",\"buildingnumber\":\"2/4 \",\"postcode\":\"95-070\",\"town\":\"Aleksandrów Łódzki\",\"latitude\":\"51.81284\",\"longitude\":\"19.31626\",\"paymentavailable\":false,\"operatinghours\":\"Paczkomat: 24/7\",\"locationdescription\":\"Przy markecie Polomarket\",\"paymentpointdescr\":null,\"partnerid\":0,\"paymenttype\":0,\"type\":\"Pack Machine\"}]"
         end
-
       end
 
 
@@ -70,7 +69,6 @@ describe PaczkomatyInpost::FileAdapter do
 
           content.should == "{\"on_delivery_payment\":\"3.50\",\"on_delivery_percentage\":\"1.80\",\"on_delivery_limit\":\"5000.00\",\"A\":\"6.99\",\"B\":\"8.99\",\"C\":\"11.99\",\"insurance\":{\"5000.00\":\"1.50\",\"10000.00\":\"2.50\",\"20000.00\":\"3.00\"}}"
         end
-
       end
 
 
@@ -83,7 +81,6 @@ describe PaczkomatyInpost::FileAdapter do
                     "latitude" => "51.81284", "longitude" => "19.31626", "paymentavailable" => false, "operatinghours" => "Paczkomat: 24/7",
                     "locationdescription" => "Przy markecie Polomarket", "paymentpointdescr" => nil, "partnerid" => 0, "paymenttype" => 0, "type" => "Pack Machine"}]
         end
-
       end
 
 
@@ -95,7 +92,6 @@ describe PaczkomatyInpost::FileAdapter do
           content.should == {"on_delivery_payment"=>"3.50", "on_delivery_percentage"=>"1.80", "on_delivery_limit"=>"5000.00", 
                   "A"=>"6.99", "B"=>"8.99", "C"=>"11.99", "insurance"=>{"5000.00"=>"1.50", "10000.00"=>"2.50", "20000.00"=>"3.00"}}
         end
-
       end
 
 
@@ -106,7 +102,6 @@ describe PaczkomatyInpost::FileAdapter do
 
           content.should == '1359406800'
         end
-
       end
 
       context 'last_update_prices' do
@@ -116,7 +111,31 @@ describe PaczkomatyInpost::FileAdapter do
 
           content.should == '1359406810'
         end
+      end
 
+      context 'save_sticker' do
+
+        it 'should save given content into pdf file named by packcode in given path' do
+          save_response = @adapter.save_sticker('custom sticker','custom_packcode','spec/assets')
+          content = File.read('spec/assets/custom_packcode.pdf')
+
+          save_response.should eq(true)
+          content.should == 'custom sticker'
+
+          File.delete('spec/assets/custom_packcode.pdf')
+        end
+
+        it 'should save given content into pdf file named by packcode in data_path if no path given' do
+          save_response = @adapter.save_sticker('custom sticker','custom_packcode')
+          content = File.read(Dir::tmpdir + '/custom_packcode.pdf')
+
+          save_response.should eq(true)
+          content.should == 'custom sticker'
+        end
+
+        it 'should raise error if invalid path given' do
+          lambda { @adapter.save_sticker('custom sticker','custom_packcode','/') }.should raise_error(Errno::EACCES)
+        end
       end
 
     end

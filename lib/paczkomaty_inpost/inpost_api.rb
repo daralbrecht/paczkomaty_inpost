@@ -21,7 +21,8 @@ module PaczkomatyInpost
 
       unless data_adapter.respond_to?(:save_machine_list) && data_adapter.respond_to?(:cached_machines) &&
               data_adapter.respond_to?(:save_price_list) && data_adapter.respond_to?(:cached_prices) &&
-              data_adapter.respond_to?(:last_update_machines) && data_adapter.respond_to?(:last_update_prices)
+              data_adapter.respond_to?(:last_update_machines) && data_adapter.respond_to?(:last_update_prices) &&
+              data_adapter.respond_to?(:save_sticker)
         valid_options = false
         errors << 'Paczkomaty API: użyty data adapter jest niekompatybilny z API' if verbose
       end
@@ -161,6 +162,15 @@ module PaczkomatyInpost
 
     def inpost_set_customer_ref(packcode, customer_ref)
       request.set_customer_ref(packcode, customer_ref)
+    end
+
+    def inpost_get_sticker(packcode,sticker_path=nil,label_type='')
+      sticker = request.get_sticker(packcode,label_type)
+      if sticker != false && sticker.include?('PDF')
+        data_adapter.save_sticker(sticker,packcode,sticker_path)
+      else
+        return sticker
+      end
     end
 
   end

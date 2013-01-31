@@ -276,6 +276,15 @@ module PaczkomatyInpost
       end
     end
 
+    def get_sticker(packcode,label_type)
+      if packcode.empty?
+        return false
+      else
+        params = {:email => username, :digest => digest, :packcode => packcode, :labeltype => label_type}
+        action_pack_status('/?do=getsticker',params)
+      end
+    end
+
     def action_pack_status(action,params)
       data = http_build_query(params)
       response = get_https_response(data,action)
@@ -285,6 +294,8 @@ module PaczkomatyInpost
       if xml_error.empty?
         if action == '/?do=setcustomerref'
           status = response.include?('Set') ? true : false
+        elsif action == '/?do=getsticker'
+          status = response.include?('PDF') ? response : false
         else
           status = response == 1 ? true : false
         end
