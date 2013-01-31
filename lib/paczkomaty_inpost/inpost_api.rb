@@ -140,11 +140,15 @@ module PaczkomatyInpost
     end
 
     def inpost_send_packs(packs_data, auto_labels=1, self_send=0)
-      request.inpost_sends_packs(packs_data, auto_labels=1, self_send=0)
+      request.send_packs(packs_data, auto_labels, self_send)
     end
 
     def inpost_get_pack_status(packcode)
       request.pack_status(packcode)
+    end
+
+    def inpost_cancel_pack(packcode)
+      request.cancel_pack(packcode)
     end
 
   end

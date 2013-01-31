@@ -32,6 +32,10 @@ module PaczkomatyInpost
       return params
     end
 
+    def digest
+      @digest ||= Base64.encode64(Digest::MD5.digest(password)).chomp
+    end
+
     def inpost_download_machines
       machines = []
 
@@ -157,14 +161,12 @@ module PaczkomatyInpost
       return pack_status
     end
 
-    def inpost_sends_packs(packs_data, auto_labels=1, self_send=0)
+    def send_packs(packs_data, auto_labels=1, self_send=0)
       sended_packs = {}
-      api_url = PaczkomatyInpost.inpost_api_url.gsub('http://', 'https://')
-      digest = Base64.encode64(Digest::MD5.digest(password))
 
       xml_packs_data = generate_xml_for_data_packs(packs_data, auto_labels, self_send)
 
-      params = {:email => username, :digest => digest.chomp, :content => xml_packs_data.target!}
+      params = {:email => username, :digest => digest, :content => xml_packs_data.target!}
       data = http_build_query(params)
 
       xml_response = get_https_response(data,'/?do=createdeliverypacks')
@@ -238,6 +240,24 @@ module PaczkomatyInpost
       return xml
     end
 
+    def cancel_pack(packcode)
+      cancel_status = ''
+
+      params = {:email => username, :digest => digest, :packcode => packcode}
+      data = http_build_query(params)
+
+      response = get_https_response(data,'/?do=cancelpack')
+
+      xml = Nokogiri::XML(response)
+      xml_error = xml.css('error')
+      if xml_error.empty?
+        cancel_status = response == 1 ? true : false
+      else
+        cancel_status = xml_error.text
+      end
+
+      return cancel_status
+    end
 
 
     private
