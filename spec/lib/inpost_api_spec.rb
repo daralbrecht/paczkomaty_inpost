@@ -359,4 +359,32 @@ describe PaczkomatyInpost::InpostAPI do
 
   end
 
+
+  context 'inpost_get_pack_status' do
+
+    before do
+      data_adapter = PaczkomatyInpost::FileAdapter.new('spec/assets')
+      request = PaczkomatyInpost::Request.new('test@testowy.pl','WqJevQy*X7')
+      @api = PaczkomatyInpost::InpostAPI.new(request,data_adapter)
+      pack = @api.inpost_prepare_pack('pack_1', 'test01@paczkomaty.pl', '501892456', 'KRA010',
+                            'B', '1.5', '10.99', 'testowa przesyłka')
+      response = @api.inpost_send_packs(pack)
+      @packcode = response['pack_1']['packcode']
+    end
+
+    it "should return status for pack assigned to given packcode" do
+      pack_status = @api.inpost_get_pack_status(@packcode)
+
+      pack_status['status'].should == 'Prepared'
+    end
+
+    it "should return error if invalid parameter given" do
+      @packcode = 'invalid_packcode'
+      pack_status = @api.inpost_get_pack_status(@packcode)
+
+      pack_status['error'].should == {'PACK_NO_ERROR' => 'Błędny numer paczki'}
+    end
+
+  end
+
 end

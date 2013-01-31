@@ -141,6 +141,22 @@ module PaczkomatyInpost
       return preferences
     end
 
+    def pack_status(packcode)
+      pack_status = {}
+
+      xml_content = get_response("/?do=getpackstatus&packcode=#{packcode}")
+      xml = Nokogiri::XML(xml_content)
+
+      xml_status = xml.css('status')
+      if xml_status.empty?
+        pack_status['error'] = {xml.css('error').attribute('key').value => xml.css('error').text}
+      else
+        pack_status['status'] = xml_status.css('status').text
+      end
+
+      return pack_status
+    end
+
     def inpost_sends_packs(packs_data, auto_labels=1, self_send=0)
       sended_packs = {}
       api_url = PaczkomatyInpost.inpost_api_url.gsub('http://', 'https://')
@@ -233,10 +249,11 @@ module PaczkomatyInpost
     end
 
     def get_https_response(params,path)
-      http = Net::HTTP.new(PaczkomatyInpost.inpost_api_url.gsub('http://',''), 443)
-      http.use_ssl = true
+      https = Net::HTTP.new(PaczkomatyInpost.inpost_api_url.gsub('http://',''), 443)
+      https.use_ssl = true
+      https.verify_mode = OpenSSL::SSL::VERIFY_NONE
       headers = {'Content-Type'=> 'application/x-www-form-urlencoded'}
-      response = http.post(path, params, headers)
+      response = https.post(path, params, headers)
 
       return response.body.gsub('"',"'").to_my_utf8
     end

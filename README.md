@@ -3,7 +3,6 @@
 Gem in the working.
 
 Missing methods:
-- inpost_get_pack_status(packcode)
 - inpost_machines_dropdown(param)
 - inpost_create_customer_partner(email, password, customerData)
 - inpost_get_sticker(email, password, packCode, labelType)

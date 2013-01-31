@@ -139,8 +139,12 @@ module PaczkomatyInpost
       return pack
     end
 
-    def inpost_send_packs(packsData, autoLabels=1, selfSend=0)
-      request.inpost_sends_packs(packsData, autoLabels=1, selfSend=0)
+    def inpost_send_packs(packs_data, auto_labels=1, self_send=0)
+      request.inpost_sends_packs(packs_data, auto_labels=1, self_send=0)
+    end
+
+    def inpost_get_pack_status(packcode)
+      request.pack_status(packcode)
     end
 
   end
