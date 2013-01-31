@@ -155,5 +155,9 @@ module PaczkomatyInpost
       request.change_packsize(packcode, packsize)
     end
 
+    def inpost_pay_for_pack(packcode)
+      request.pay_for_pack(packcode)
+    end
+
   end
 end

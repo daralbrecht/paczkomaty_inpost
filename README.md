@@ -11,4 +11,3 @@ Missing methods:
 - inpost_get_confirm_printout(email, password, packCodes, testPrintout)
 - inpost_get_packs_by_sender(email, password, parameters)
 - inpost_get_cod_report(email, password, parameters)
-- inpost_pay_for_pack(email, password, packcode)

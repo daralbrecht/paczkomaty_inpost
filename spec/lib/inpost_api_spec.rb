@@ -388,7 +388,7 @@ describe PaczkomatyInpost::InpostAPI do
   end
 
 
-    context 'inpost_cancel_pack' do
+  context 'inpost_cancel_pack' do
 
     before do
       data_adapter = PaczkomatyInpost::FileAdapter.new('spec/assets')
@@ -423,7 +423,7 @@ describe PaczkomatyInpost::InpostAPI do
   end
 
 
-context 'inpost_change_packsize' do
+  context 'inpost_change_packsize' do
 
     before do
       data_adapter = PaczkomatyInpost::FileAdapter.new('spec/assets')
@@ -449,9 +449,44 @@ context 'inpost_change_packsize' do
     end
 
     it "should return error if there were problems with changing packsize" do
-      packsize_status = @api.inpost_change_packsize(@packcode,'custom_packsize')
+      packsize_status = @api.inpost_change_packsize(@packcode,'B')
 
       packsize_status.should == '[51] Zmiana rozmiaru nie jest możliwa dla Paczki już opłaconej.'
+    end
+  end
+
+
+  context 'inpost_pay_for_pack' do
+
+    before do
+      data_adapter = PaczkomatyInpost::FileAdapter.new('spec/assets')
+      request = PaczkomatyInpost::Request.new('test@testowy.pl','WqJevQy*X7')
+      @api = PaczkomatyInpost::InpostAPI.new(request,data_adapter)
+      pack = @api.inpost_prepare_pack('pack_1', 'test01@paczkomaty.pl', '501892456', 'KRA010',
+                            'A', '1.50', '9.99', 'testowa przesyłka')
+      response = @api.inpost_send_packs(pack)
+      @packcode = response['pack_1']['packcode']
+    end
+
+    # it "should return true if pack status is changed to Prepared or CustomerDelivering" do
+    # TODO: Test it somehow - test accounts have packs set automaticaly to Prepared
+    #   pack_status = @api.inpost_pay_for_pack(@packcode)
+
+    #   pack_status.should eq(true)
+    # end
+
+    it "should return false if given packcode is empty" do
+      @packcode = ''
+      pack_status = @api.inpost_pay_for_pack(@packcode)
+
+      pack_status.should eq(false)
+    end
+
+    it "should return error if invalid parameter given" do
+      @packcode = 'invalid_packcode'
+      pack_status = @api.inpost_pay_for_pack(@packcode)
+
+      pack_status.should == 'No delivery pack with code: invalid_packcode'
     end
   end
 
