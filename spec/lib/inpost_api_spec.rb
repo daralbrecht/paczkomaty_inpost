@@ -407,13 +407,12 @@ describe PaczkomatyInpost::InpostAPI do
       # cancel_status.should eq(true)
     # end
 
-    # it "should return false if given data is incomplete" do
-      #TODO: Also needs more information on this from Inpost staff - documentation gives information that it should return 0 but it always returns error message.
-      # @packcode = ''
-      # cancel_status = @api.inpost_cancel_pack(@packcode)
+    it "should return false if given packcode is empty" do
+      @packcode = ''
+      cancel_status = @api.inpost_cancel_pack(@packcode)
 
-      # cancel_status.should eq(false)
-    # end
+      cancel_status.should eq(false)
+    end
 
     it "should return error if invalid parameter given" do
       @packcode = 'invalid_packcode'
@@ -421,7 +420,39 @@ describe PaczkomatyInpost::InpostAPI do
 
       cancel_status.should == 'No delivery pack with code: invalid_packcode'
     end
+  end
 
+
+context 'inpost_change_packsize' do
+
+    before do
+      data_adapter = PaczkomatyInpost::FileAdapter.new('spec/assets')
+      request = PaczkomatyInpost::Request.new('test@testowy.pl','WqJevQy*X7')
+      @api = PaczkomatyInpost::InpostAPI.new(request,data_adapter)
+      pack = @api.inpost_prepare_pack('pack_1', 'test01@paczkomaty.pl', '501892456', 'KRA010',
+                            'A', '1.50', '9.99', 'testowa przesyłka')
+      response = @api.inpost_send_packs(pack)
+      @packcode = response['pack_1']['packcode']
+    end
+
+    # it "should return true if packsize is changed" do
+      #TODO: Test it somehow - test accounts omits 'Created' in pack statuses and only 'Created' packs can have packsize changed
+      # packsize_status = @api.inpost_change_packsize(@packcode, 'B')
+
+      # packsize_status.should eq(true)
+    # end
+
+    it "should return false if given data is incomplete" do
+      packsize_status = @api.inpost_change_packsize(@packcode, '')
+
+      packsize_status.should eq(false)
+    end
+
+    it "should return error if there were problems with changing packsize" do
+      packsize_status = @api.inpost_change_packsize(@packcode,'custom_packsize')
+
+      packsize_status.should == '[51] Zmiana rozmiaru nie jest możliwa dla Paczki już opłaconej.'
+    end
   end
 
 end

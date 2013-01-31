@@ -151,5 +151,9 @@ module PaczkomatyInpost
       request.cancel_pack(packcode)
     end
 
+    def inpost_change_packsize(packcode, packsize)
+      request.change_packsize(packcode, packsize)
+    end
+
   end
 end

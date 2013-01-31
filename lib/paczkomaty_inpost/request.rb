@@ -243,20 +243,47 @@ module PaczkomatyInpost
     def cancel_pack(packcode)
       cancel_status = ''
 
-      params = {:email => username, :digest => digest, :packcode => packcode}
-      data = http_build_query(params)
-
-      response = get_https_response(data,'/?do=cancelpack')
-
-      xml = Nokogiri::XML(response)
-      xml_error = xml.css('error')
-      if xml_error.empty?
-        cancel_status = response == 1 ? true : false
+      if packcode.empty?
+        cancel_status = false
       else
-        cancel_status = xml_error.text
+        params = {:email => username, :digest => digest, :packcode => packcode}
+        data = http_build_query(params)
+
+        response = get_https_response(data,'/?do=cancelpack')
+
+        xml = Nokogiri::XML(response)
+        xml_error = xml.css('error')
+        if xml_error.empty?
+          cancel_status = response == 1 ? true : false
+        else
+          cancel_status = xml_error.text
+        end
       end
 
       return cancel_status
+    end
+
+    def change_packsize(packcode, packsize)
+      packsize_status = ''
+
+      if packcode.empty? || packsize.empty?
+        packsize_status = false
+      else
+        params = {:email => username, :digest => digest, :packcode => packcode, :packsize => packsize}
+        data = http_build_query(params)
+
+        response = get_https_response(data,'/?do=change_packsize')
+
+        xml = Nokogiri::XML(response)
+        xml_error = xml.css('error')
+        if xml_error.empty?
+          packsize_status = response == 1 ? true : false
+        else
+          packsize_status = xml_error.text
+        end
+      end
+
+      return packsize_status
     end
 
 
