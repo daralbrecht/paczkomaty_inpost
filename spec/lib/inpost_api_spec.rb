@@ -4,105 +4,88 @@ require 'spec_helper'
 describe PaczkomatyInpost::InpostAPI do
 
 
-  context "check for environment options with invalid data" do
+  context "initialize" do
 
     before do
-      data_adapter = 'wrong data adapter object'
-      request = 'wrong request object'
-      @api = PaczkomatyInpost::InpostAPI.new(request,data_adapter)
+      @data_adapter = PaczkomatyInpost::FileAdapter.new(Dir::tmpdir)
     end
 
-    it "should return false" do
-      @api.inpost_check_environment.should equal(false)
+    it "should check if attributes given are valid and raise error if not" do
+      lambda { PaczkomatyInpost::InpostAPI.new('',nil,'wrong data adapter object') }.should raise_error(RuntimeError)
+      lambda { PaczkomatyInpost::InpostAPI.new('test@testowy.pl','WqJevQy*X7','wrong data adapter object') }.should raise_error(RuntimeError)
+      lambda { PaczkomatyInpost::InpostAPI.new('','WqJevQy*X7',@data_adapter) }.should raise_error(RuntimeError)
     end
 
-    it "should return false and list of errors" do
-      valid_options, errors = @api.inpost_check_environment(true)
-      valid_options.should equal(false)
-      errors.should == ['Paczkomaty API: użyty data adapter jest niekompatybilny z API',
-                        'Paczkomaty API: nazwa użytkownika musi być zapisana w PaczkomatyInpost::Request',
-                        'Paczkomaty API: hasło musi być zapisane w PaczkomatyInpost::Request']
+    it "should check if attributes given are valid and create object if true" do
+      @api = PaczkomatyInpost::InpostAPI.new('test@testowy.pl','WqJevQy*X7',@data_adapter)
+
+      @api.should be_kind_of(PaczkomatyInpost::InpostAPI)
     end
   end
 
 
-  context "check for environment options with valid data" do
+  context "getting params by request" do
 
     before do
-      file_path = Dir::tmpdir
-      data_adapter = PaczkomatyInpost::FileAdapter.new(file_path)
-      request = PaczkomatyInpost::Request.new('test@testowy.pl','WqJevQy*X7')
-      @api = PaczkomatyInpost::InpostAPI.new(request,data_adapter)
+      data_adapter = PaczkomatyInpost::FileAdapter.new(Dir::tmpdir)
+      @api = PaczkomatyInpost::InpostAPI.new('test@testowy.pl','WqJevQy*X7',data_adapter)
     end
 
-    it "should return true" do
-      @api.inpost_check_environment.should equal(true)
-    end
+    it "should get inpost params with valid data" do
+      params = @api.params
 
-    it "should return true and empty list of errors" do
-      valid_options, errors = @api.inpost_check_environment(true)
-      valid_options.should equal(true)
-      errors.should == []
-    end
-  end
+      params.should be_a_kind_of(Hash)
+      params.keys.should =~ [:logo_url, :info_url, :rules_url, :register_url,  :last_update, :current_api_version]
+      params.values.should_not include(nil)
 
+      URI.parse(params[:logo_url]).should be_a_kind_of(URI::HTTP)
+      URI.parse(params[:info_url]).should be_a_kind_of(URI::HTTP)
+      URI.parse(params[:rules_url]).should be_a_kind_of(URI::HTTP)
+      URI.parse(params[:register_url]).should be_a_kind_of(URI::HTTPS)
 
-  before do
-    file_path = Dir::tmpdir
-    data_adapter = PaczkomatyInpost::FileAdapter.new(file_path)
-    request = PaczkomatyInpost::Request.new('test@testowy.pl','WqJevQy*X7')
-    @api = PaczkomatyInpost::InpostAPI.new(request,data_adapter)
-    machines = [{:name => "ALL992", :street => "Piłsudskiego", :buildingnumber => "2/4 ", :postcode => "95-070", :town => "Aleksandrów Łódzki",
-            :latitude => "51.81284", :longitude => "19.31626", :paymentavailable => false, :operatinghours => "Paczkomat: 24/7",
-            :locationdescription => "Przy markecie Polomarket", :paymentpointdescr => nil, :partnerid => 0, :paymenttype => 0, :type => "Pack Machine"}]
-    prices = {"on_delivery_payment"=>"3.50", "on_delivery_percentage"=>"1.80", "on_delivery_limit"=>"5000.00", 
-              "A"=>"6.99", "B"=>"8.99", "C"=>"11.99", "insurance"=>{"5000.00"=>"1.50", "10000.00"=>"2.50", "20000.00"=>"3.00"}}
-    data_adapter.save_machine_list(machines,"1359396000")
-    data_adapter.save_price_list(prices, "1359406810")
-  end
-
-
-  it "should get inpost params with valid data" do
-    params = @api.params
-
-    params.should be_a_kind_of(Hash)
-    params.keys.should =~ [:logo_url, :info_url, :rules_url, :register_url,  :last_update, :current_api_version]
-    params.values.should_not include(nil)
-
-    URI.parse(params[:logo_url]).should be_a_kind_of(URI::HTTP)
-    URI.parse(params[:info_url]).should be_a_kind_of(URI::HTTP)
-    URI.parse(params[:rules_url]).should be_a_kind_of(URI::HTTP)
-    URI.parse(params[:register_url]).should be_a_kind_of(URI::HTTPS)
-
-    params[:last_update].should match /\A\d+\z/
-    params[:current_api_version].should eq(PaczkomatyInpost::VERSION)
-  end
-
-
-  context "inpost_machines_cache_is_valid?" do
-
-    it "should return true if machines data is valid" do
-      @api.params[:last_update] = '1359396000'
-      @api.inpost_machines_cache_is_valid?.should equal(true)
-    end
-
-    it "should return false if machines data is out of date" do
-      @api.params[:last_update] = '1000000000'
-      @api.inpost_machines_cache_is_valid?.should equal(false)
+      params[:last_update].should match /\A\d+\z/
+      params[:current_api_version].should eq(PaczkomatyInpost::VERSION)
     end
   end
 
+  context "cache validator" do
 
-  context "inpost_prices_cache_is_valid?" do
-
-    it "should return true if prices data is valid" do
-      @api.params[:last_update] = '1359406810'
-      @api.inpost_prices_cache_is_valid?.should equal(true)
+    before do
+      data_adapter = PaczkomatyInpost::FileAdapter.new(Dir::tmpdir)
+      @api = PaczkomatyInpost::InpostAPI.new('test@testowy.pl','WqJevQy*X7',data_adapter)
+      machines = [{:name => "ALL992", :street => "Piłsudskiego", :buildingnumber => "2/4 ", :postcode => "95-070", :town => "Aleksandrów Łódzki",
+              :latitude => "51.81284", :longitude => "19.31626", :paymentavailable => false, :operatinghours => "Paczkomat: 24/7",
+              :locationdescription => "Przy markecie Polomarket", :paymentpointdescr => nil, :partnerid => 0, :paymenttype => 0, :type => "Pack Machine"}]
+      prices = {"on_delivery_payment"=>"3.50", "on_delivery_percentage"=>"1.80", "on_delivery_limit"=>"5000.00", 
+                "A"=>"6.99", "B"=>"8.99", "C"=>"11.99", "insurance"=>{"5000.00"=>"1.50", "10000.00"=>"2.50", "20000.00"=>"3.00"}}
+      data_adapter.save_machine_list(machines,"1359396000")
+      data_adapter.save_price_list(prices, "1359406810")
     end
 
-    it "should return false if prices data is out of date" do
-      @api.params[:last_update] = '1000000000'
-      @api.inpost_prices_cache_is_valid?.should equal(false)
+    context "for inpost machines" do
+
+      it "should return true if machines data is valid" do
+        @api.params[:last_update] = '1359396000'
+        @api.inpost_machines_cache_is_valid?.should equal(true)
+      end
+
+      it "should return false if machines data is out of date" do
+        @api.params[:last_update] = '1000000000'
+        @api.inpost_machines_cache_is_valid?.should equal(false)
+      end
+    end
+
+    context "for inpost prices" do
+
+      it "should return true if prices data is valid" do
+        @api.params[:last_update] = '1359406810'
+        @api.inpost_prices_cache_is_valid?.should equal(true)
+      end
+
+      it "should return false if prices data is out of date" do
+        @api.params[:last_update] = '1000000000'
+        @api.inpost_prices_cache_is_valid?.should equal(false)
+      end
     end
   end
 
@@ -110,11 +93,8 @@ describe PaczkomatyInpost::InpostAPI do
   context "inpost_get_machine_list" do
 
     before do
-      file_path = 'spec/assets'
-      PaczkomatyInpost::FileAdapter.any_instance.stub(:validate_path).and_return(true)
-      data_adapter = PaczkomatyInpost::FileAdapter.new(file_path)
-      request = PaczkomatyInpost::Request.new('test@testowy.pl','WqJevQy*X7')
-      @api = PaczkomatyInpost::InpostAPI.new(request,data_adapter)
+      data_adapter = PaczkomatyInpost::FileAdapter.new('spec/assets')
+      @api = PaczkomatyInpost::InpostAPI.new('test@testowy.pl','WqJevQy*X7',data_adapter)
     end
 
 
@@ -125,30 +105,28 @@ describe PaczkomatyInpost::InpostAPI do
     end
 
     it "should return list of machines by town if given" do
-      machines = @api.inpost_get_machine_list('Gdynia')
+      machines = @api.inpost_get_machine_list(:town => 'Gdynia')
 
       machines.length.should == 7
     end
 
     it "should be case insensitive" do
-      machines = @api.inpost_get_machine_list('Gdynia')
-      lowercase_machines = @api.inpost_get_machine_list('gdynia')
+      machines = @api.inpost_get_machine_list(:town => 'Gdynia')
+      lowercase_machines = @api.inpost_get_machine_list(:town => 'gdynia')
 
       machines.should == lowercase_machines
     end
 
     it "should return list of machines by paymentavailable if given" do
-      machines = @api.inpost_get_machine_list(nil,true)
+      machines = @api.inpost_get_machine_list(:paymentavailable => true)
 
       machines.length.should == 377
     end
 
     it "should return list of machines by town and paymentavailable if both given" do
-      machines = @api.inpost_get_machine_list('Gdynia',true)
+      machines = @api.inpost_get_machine_list(:town => 'Gdynia', :paymentavailable => true)
 
       machines.length.should == 6
-
-      @api.inpost_find_nearest_machines('83-200', true)
     end
   end
 
@@ -156,11 +134,8 @@ describe PaczkomatyInpost::InpostAPI do
   context "inpost_get_pricelist" do
 
     it "should return price list" do
-      file_path = 'spec/assets'
-      PaczkomatyInpost::FileAdapter.any_instance.stub(:validate_path).and_return(true)
-      data_adapter = PaczkomatyInpost::FileAdapter.new(file_path)
-      request = PaczkomatyInpost::Request.new('test@testowy.pl','WqJevQy*X7')
-      @api = PaczkomatyInpost::InpostAPI.new(request,data_adapter)
+      data_adapter = PaczkomatyInpost::FileAdapter.new('spec/assets')
+      @api = PaczkomatyInpost::InpostAPI.new('test@testowy.pl','WqJevQy*X7',data_adapter)
 
       prices = @api.inpost_get_pricelist
 
@@ -176,11 +151,8 @@ describe PaczkomatyInpost::InpostAPI do
     end
 
     it "should return empty list if no data cached" do
-      file_path = 'spec'
-      PaczkomatyInpost::FileAdapter.any_instance.stub(:validate_path).and_return(true)
-      data_adapter = PaczkomatyInpost::FileAdapter.new(file_path)
-      request = PaczkomatyInpost::Request.new('test@testowy.pl','WqJevQy*X7')
-      @api = PaczkomatyInpost::InpostAPI.new(request,data_adapter)
+      data_adapter = PaczkomatyInpost::FileAdapter.new('spec')
+      @api = PaczkomatyInpost::InpostAPI.new('test@testowy.pl','WqJevQy*X7',data_adapter)
 
       prices = @api.inpost_get_pricelist
 
@@ -191,14 +163,9 @@ describe PaczkomatyInpost::InpostAPI do
 
   context "inpost_get_towns" do
 
-    before do
-      PaczkomatyInpost::FileAdapter.any_instance.stub(:validate_path).and_return(true)
-      @request = PaczkomatyInpost::Request.new('test@testowy.pl','WqJevQy*X7')
-    end
-
     it "should return list of towns from cached machines" do
       data_adapter = PaczkomatyInpost::FileAdapter.new('spec/assets')
-      @api = PaczkomatyInpost::InpostAPI.new(@request,data_adapter)
+      @api = PaczkomatyInpost::InpostAPI.new('test@testowy.pl','WqJevQy*X7',data_adapter)
 
       towns = @api.inpost_get_towns
 
@@ -208,7 +175,7 @@ describe PaczkomatyInpost::InpostAPI do
 
     it "should return empty list if cached machines missing" do
       data_adapter = PaczkomatyInpost::FileAdapter.new('spec')
-      @api = PaczkomatyInpost::InpostAPI.new(@request,data_adapter)
+      @api = PaczkomatyInpost::InpostAPI.new('test@testowy.pl','WqJevQy*X7',data_adapter)
 
       towns = @api.inpost_get_towns
       towns.should == []
@@ -219,11 +186,8 @@ describe PaczkomatyInpost::InpostAPI do
   context "inpost_find_nearest_machines" do
 
     before do
-      file_path = 'spec/assets'
-      PaczkomatyInpost::FileAdapter.any_instance.stub(:validate_path).and_return(true)
-      data_adapter = PaczkomatyInpost::FileAdapter.new(file_path)
-      request = PaczkomatyInpost::Request.new('test@testowy.pl','WqJevQy*X7')
-      @api = PaczkomatyInpost::InpostAPI.new(request,data_adapter)
+      data_adapter = PaczkomatyInpost::FileAdapter.new('spec/assets')
+      @api = PaczkomatyInpost::InpostAPI.new('test@testowy.pl','WqJevQy*X7',data_adapter)
     end
 
     it "should return list of 3 nearest machines if postcode given" do
@@ -241,7 +205,7 @@ describe PaczkomatyInpost::InpostAPI do
 
     it "should return list of 3 nearest machines by paymentavailable if given" do
       machines_with_payment_available = @api.inpost_find_nearest_machines('76-200',true)
-      machines_without_payment_available = @api.inpost_find_nearest_machines('76-200',false,true)
+      machines_without_payment_available = @api.inpost_find_nearest_machines('76-200',false)
 
       machines_with_payment_available.should_not == machines_without_payment_available
       machines_with_payment_available.map{|machine| machine['paymentavailable']}.uniq[0].should eq(true)
@@ -260,8 +224,7 @@ describe PaczkomatyInpost::InpostAPI do
 
     before do
       data_adapter = PaczkomatyInpost::FileAdapter.new('spec/assets')
-      request = PaczkomatyInpost::Request.new('test@testowy.pl','WqJevQy*X7')
-      @api = PaczkomatyInpost::InpostAPI.new(request,data_adapter)
+      @api = PaczkomatyInpost::InpostAPI.new('test@testowy.pl','WqJevQy*X7',data_adapter)
     end
 
     it "should return user preferences given registered email" do
@@ -282,8 +245,7 @@ describe PaczkomatyInpost::InpostAPI do
 
     before do
       data_adapter = PaczkomatyInpost::FileAdapter.new('spec/assets')
-      request = PaczkomatyInpost::Request.new('test@testowy.pl','WqJevQy*X7')
-      @api = PaczkomatyInpost::InpostAPI.new(request,data_adapter)
+      @api = PaczkomatyInpost::InpostAPI.new('test@testowy.pl','WqJevQy*X7',data_adapter)
     end
 
     it "should return pack ready to send if valid paramteres given" do
@@ -291,18 +253,16 @@ describe PaczkomatyInpost::InpostAPI do
                 :street => 'Test Street', :building_no => '12', :flat_no => nil, :town => 'Test City',
                 :zip_code => '67-248', :province => 'pomorskie'}
       pack = @api.inpost_prepare_pack('pack_1', 'test01@paczkomaty.pl', '501892456', 'KRA010',
-                            'B', '1.5', '10.99', 'testowa przesyłka', nil, sender)
+                            'B', '1.5', '10.99', :customer_ref => 'testowa przesyłka', :sender_address => sender)
 
       pack.valid?.should eq(true)
     end
 
-    it "should throw error if invalid paramteres given" do
+    it "should throw error if invalid parameters given" do
       sender = 'I am sender!'
       lambda { @api.inpost_prepare_pack('pack_1', 'test01@paczkomaty.pl', '501892456', 'KRA010',
-                            'B', '1.5', '10.99', 'testowa przesyłka', nil, sender) }.should raise_error(RuntimeError)
-
+                            'B', '1.5', '10.99', :customer_ref => 'testowa przesyłka', :sender_address => sender) }.should raise_error(RuntimeError)
     end
-
   end
 
 
@@ -313,16 +273,15 @@ describe PaczkomatyInpost::InpostAPI do
                 :street => 'Test Street', :building_no => '12', :flat_no => nil, :town => 'Test City',
                 :zip_code => '67-248', :province => 'pomorskie'}
       data_adapter = PaczkomatyInpost::FileAdapter.new('spec/assets')
-      request = PaczkomatyInpost::Request.new('test@testowy.pl','WqJevQy*X7')
-      @api = PaczkomatyInpost::InpostAPI.new(request,data_adapter)
+      @api = PaczkomatyInpost::InpostAPI.new('test@testowy.pl','WqJevQy*X7',data_adapter)
       @pack_1 = @api.inpost_prepare_pack('pack_1', 'test01@paczkomaty.pl', '501892456', 'KRA010',
-                            'B', '1.5', '10.99', 'testowa przesyłka', nil, sender)
+                            'B', '1.5', '10.99', :customer_ref => 'testowa przesyłka', :sender_address => sender)
       @pack_2 = @api.inpost_prepare_pack('pack_2', 'test04@paczkomaty.pl', '501892456', 'KRA010',
-                            'B', '1.5', '10.99', 'testowa przesyłka', 'BBI233', sender)
+                            'B', '1.5', '10.99', :customer_ref => 'testowa przesyłka', :alternative_box_machine_name => 'BBI233', :sender_address => sender)
       @pack_3 = @api.inpost_prepare_pack('pack_3', 'test03@paczkomaty.pl', '501892456', 'KRA010',
-                            'B', '1.5', '10.99', 'testowa przesyłka')
+                            'B', '1.5', '10.99', :customer_ref => 'testowa przesyłka')
       @invalid_pack = @api.inpost_prepare_pack('invalid_pack', 'test02@paczkomaty.pl', '501892456', 'KR0',
-                            'D', '1.4', '11.99', 'testowa przesyłka', nil, sender)
+                            'D', '1.4', '11.99', :customer_ref => 'testowa przesyłka', :sender_address => sender)
     end
 
     it "should return array with given packcode for sended pack" do
@@ -356,212 +315,162 @@ describe PaczkomatyInpost::InpostAPI do
       response['error'].should_not == nil
       response['pack_1'].should == nil
     end
-
   end
 
 
-  context 'inpost_get_pack_status' do
+  context 'method' do
 
     before do
       data_adapter = PaczkomatyInpost::FileAdapter.new('spec/assets')
-      request = PaczkomatyInpost::Request.new('test@testowy.pl','WqJevQy*X7')
-      @api = PaczkomatyInpost::InpostAPI.new(request,data_adapter)
-      pack = @api.inpost_prepare_pack('pack_1', 'test01@paczkomaty.pl', '501892456', 'KRA010',
-                            'B', '1.5', '10.99', 'testowa przesyłka')
+      @api = PaczkomatyInpost::InpostAPI.new('test@testowy.pl','WqJevQy*X7',data_adapter)
+      pack = @api.inpost_prepare_pack('pack_1', 'test01@paczkomaty.pl', '501892456', 'KRA010','B', '1.5', '10.99')
       response = @api.inpost_send_packs(pack)
       @packcode = response['pack_1']['packcode']
     end
 
-    it "should return status for pack assigned to given packcode" do
-      pack_status = @api.inpost_get_pack_status(@packcode)
 
-      pack_status['status'].should == 'Prepared'
+    context 'inpost_get_pack_status' do
+
+      it "should return status for pack assigned to given packcode" do
+        pack_status = @api.inpost_get_pack_status(@packcode)
+
+        pack_status['status'].should == 'Prepared'
+      end
+
+      it "should return error if invalid parameter given" do
+        @packcode = 'invalid_packcode'
+        pack_status = @api.inpost_get_pack_status(@packcode)
+
+        pack_status['error'].should == {'PACK_NO_ERROR' => 'Błędny numer paczki'}
+      end
     end
 
-    it "should return error if invalid parameter given" do
-      @packcode = 'invalid_packcode'
-      pack_status = @api.inpost_get_pack_status(@packcode)
 
-      pack_status['error'].should == {'PACK_NO_ERROR' => 'Błędny numer paczki'}
+    context 'inpost_cancel_pack' do
+
+      # it "should return true if pack is canceled" do
+        #TODO: Test it somehow - test accounts omits 'Created' in pack statuses and only 'Created' packs can be canceled
+        # cancel_status = @api.inpost_cancel_pack(@packcode)
+
+        # cancel_status.should eq(true)
+      # end
+
+      it "should return false if given packcode is empty" do
+        @packcode = ''
+        cancel_status = @api.inpost_cancel_pack(@packcode)
+
+        cancel_status.should eq(false)
+      end
+
+      it "should return error if invalid parameter given" do
+        @packcode = 'invalid_packcode'
+        cancel_status = @api.inpost_cancel_pack(@packcode)
+
+        cancel_status.should == 'No delivery pack with code: invalid_packcode'
+      end
+    end
+
+
+    context 'inpost_change_packsize' do
+
+      # it "should return true if packsize is changed" do
+        #TODO: Test it somehow - test accounts omits 'Created' in pack statuses and only 'Created' packs can have packsize changed
+        # packsize_status = @api.inpost_change_packsize(@packcode, 'B')
+
+        # packsize_status.should eq(true)
+      # end
+
+      it "should return false if given data is incomplete" do
+        packsize_status = @api.inpost_change_packsize(@packcode, '')
+
+        packsize_status.should eq(false)
+      end
+
+      it "should return error if there were problems with changing packsize" do
+        packsize_status = @api.inpost_change_packsize(@packcode,'B')
+
+        packsize_status.should == '[51] Zmiana rozmiaru nie jest możliwa dla Paczki już opłaconej.'
+      end
+    end
+
+
+    context 'inpost_pay_for_pack' do
+
+      # it "should return true if pack status is changed to Prepared or CustomerDelivering" do
+      # TODO: Test it somehow - test accounts have packs set automaticaly to Prepared
+      #   pack_status = @api.inpost_pay_for_pack(@packcode)
+
+      #   pack_status.should eq(true)
+      # end
+
+      it "should return false if given packcode is empty" do
+        @packcode = ''
+        pack_status = @api.inpost_pay_for_pack(@packcode)
+
+        pack_status.should eq(false)
+      end
+
+      it "should return error if invalid parameter given" do
+        @packcode = 'invalid_packcode'
+        pack_status = @api.inpost_pay_for_pack(@packcode)
+
+        pack_status.should == 'No delivery pack with code: invalid_packcode'
+      end
+    end
+
+
+    context 'inpost_set_customer_ref' do
+
+      it "should return true if customer ref was successful set" do
+        ref_status = @api.inpost_set_customer_ref(@packcode,'custom ref')
+
+        ref_status.should eq(true)
+      end
+
+      it "should return false if any given parameter is empty" do
+        ref_status = @api.inpost_set_customer_ref(@packcode,'')
+
+        ref_status.should eq(false)
+      end
+
+      it "should return error if invalid parameter given" do
+        ref_status = @api.inpost_set_customer_ref('invalid','ref')
+
+        ref_status.should == 'No delivery pack with code: invalid'
+      end
+    end
+
+
+    context 'inpost_get_sticker' do
+
+      it "should save sticker into pdf file at given path with packcode used as filename and return true" do
+        sticker_status = @api.inpost_get_sticker(@packcode, :sticker_path => Dir::tmpdir)
+
+        sticker_status.should eq(true)
+        File.exist?(File.join(Dir::tmpdir, "#{@packcode}.pdf")).should eq(true)
+      end
+
+      it "should save sticker into pdf file at data_path if no path given" do
+        sticker_status = @api.inpost_get_sticker(@packcode, :label_type => 'A6P')
+
+        sticker_status.should eq(true)
+        File.exist?(File.join(@api.data_adapter.data_path, "#{@packcode}.pdf")).should eq(true)
+
+        File.delete(File.join(@api.data_adapter.data_path, "#{@packcode}.pdf"))
+      end
+
+      it "should return false if packode given is empty" do
+        sticker_status = @api.inpost_get_sticker('')
+
+        sticker_status.should eq(false)
+      end
+
+      it "should return error message if invalid parameter given" do
+        sticker_status = @api.inpost_get_sticker('invalid')
+
+        sticker_status.should == 'Parcels with codes [invalid] not found'
+      end
     end
 
   end
-
-
-  context 'inpost_cancel_pack' do
-
-    before do
-      data_adapter = PaczkomatyInpost::FileAdapter.new('spec/assets')
-      request = PaczkomatyInpost::Request.new('test@testowy.pl','WqJevQy*X7')
-      @api = PaczkomatyInpost::InpostAPI.new(request,data_adapter)
-      pack = @api.inpost_prepare_pack('pack_1', 'test01@paczkomaty.pl', '501892456', 'KRA010',
-                            'A', '1.50', '9.99', 'testowa przesyłka')
-      response = @api.inpost_send_packs(pack)
-      @packcode = response['pack_1']['packcode']
-    end
-
-    # it "should return true if pack is canceled" do
-      #TODO: Test it somehow - test accounts omits 'Created' in pack statuses and only 'Created' packs can be canceled
-      # cancel_status = @api.inpost_cancel_pack(@packcode)
-
-      # cancel_status.should eq(true)
-    # end
-
-    it "should return false if given packcode is empty" do
-      @packcode = ''
-      cancel_status = @api.inpost_cancel_pack(@packcode)
-
-      cancel_status.should eq(false)
-    end
-
-    it "should return error if invalid parameter given" do
-      @packcode = 'invalid_packcode'
-      cancel_status = @api.inpost_cancel_pack(@packcode)
-
-      cancel_status.should == 'No delivery pack with code: invalid_packcode'
-    end
-  end
-
-
-  context 'inpost_change_packsize' do
-
-    before do
-      data_adapter = PaczkomatyInpost::FileAdapter.new('spec/assets')
-      request = PaczkomatyInpost::Request.new('test@testowy.pl','WqJevQy*X7')
-      @api = PaczkomatyInpost::InpostAPI.new(request,data_adapter)
-      pack = @api.inpost_prepare_pack('pack_1', 'test01@paczkomaty.pl', '501892456', 'KRA010',
-                            'A', '1.50', '9.99', 'testowa przesyłka')
-      response = @api.inpost_send_packs(pack)
-      @packcode = response['pack_1']['packcode']
-    end
-
-    # it "should return true if packsize is changed" do
-      #TODO: Test it somehow - test accounts omits 'Created' in pack statuses and only 'Created' packs can have packsize changed
-      # packsize_status = @api.inpost_change_packsize(@packcode, 'B')
-
-      # packsize_status.should eq(true)
-    # end
-
-    it "should return false if given data is incomplete" do
-      packsize_status = @api.inpost_change_packsize(@packcode, '')
-
-      packsize_status.should eq(false)
-    end
-
-    it "should return error if there were problems with changing packsize" do
-      packsize_status = @api.inpost_change_packsize(@packcode,'B')
-
-      packsize_status.should == '[51] Zmiana rozmiaru nie jest możliwa dla Paczki już opłaconej.'
-    end
-  end
-
-
-  context 'inpost_pay_for_pack' do
-
-    before do
-      data_adapter = PaczkomatyInpost::FileAdapter.new('spec/assets')
-      request = PaczkomatyInpost::Request.new('test@testowy.pl','WqJevQy*X7')
-      @api = PaczkomatyInpost::InpostAPI.new(request,data_adapter)
-      pack = @api.inpost_prepare_pack('pack_1', 'test01@paczkomaty.pl', '501892456', 'KRA010',
-                            'A', '1.50', '9.99', 'testowa przesyłka')
-      response = @api.inpost_send_packs(pack)
-      @packcode = response['pack_1']['packcode']
-    end
-
-    # it "should return true if pack status is changed to Prepared or CustomerDelivering" do
-    # TODO: Test it somehow - test accounts have packs set automaticaly to Prepared
-    #   pack_status = @api.inpost_pay_for_pack(@packcode)
-
-    #   pack_status.should eq(true)
-    # end
-
-    it "should return false if given packcode is empty" do
-      @packcode = ''
-      pack_status = @api.inpost_pay_for_pack(@packcode)
-
-      pack_status.should eq(false)
-    end
-
-    it "should return error if invalid parameter given" do
-      @packcode = 'invalid_packcode'
-      pack_status = @api.inpost_pay_for_pack(@packcode)
-
-      pack_status.should == 'No delivery pack with code: invalid_packcode'
-    end
-  end
-
-
-  context 'inpost_set_customer_ref' do
-
-    before do
-      data_adapter = PaczkomatyInpost::FileAdapter.new('spec/assets')
-      request = PaczkomatyInpost::Request.new('test@testowy.pl','WqJevQy*X7')
-      @api = PaczkomatyInpost::InpostAPI.new(request,data_adapter)
-      pack = @api.inpost_prepare_pack('pack_1', 'test01@paczkomaty.pl', '501892456', 'KRA010',
-                            'A', '1.50', '9.99', 'testowa przesyłka')
-      response = @api.inpost_send_packs(pack)
-      @packcode = response['pack_1']['packcode']
-    end
-
-    it "should return true if customer ref was successful set" do
-      ref_status = @api.inpost_set_customer_ref(@packcode,'custom ref')
-
-      ref_status.should eq(true)
-    end
-
-    it "should return false if any given parameter is empty" do
-      ref_status = @api.inpost_set_customer_ref(@packcode,'')
-
-      ref_status.should eq(false)
-    end
-
-    it "should return error if invalid parameter given" do
-      ref_status = @api.inpost_set_customer_ref('invalid','ref')
-
-      ref_status.should == 'No delivery pack with code: invalid'
-    end
-  end
-
-
-  context 'inpost_get_sticker' do
-
-    before do
-      data_adapter = PaczkomatyInpost::FileAdapter.new('spec/assets')
-      request = PaczkomatyInpost::Request.new('test@testowy.pl','WqJevQy*X7')
-      @api = PaczkomatyInpost::InpostAPI.new(request,data_adapter)
-      pack = @api.inpost_prepare_pack('pack_1', 'test01@paczkomaty.pl', '501892456', 'KRA010',
-                            'A', '1.50', '9.99', 'testowa przesyłka')
-      response = @api.inpost_send_packs(pack)
-      @packcode = response['pack_1']['packcode']
-    end
-
-    it "should save sticker into pdf file at given path with packcode used as filename and return true" do
-      sticker_status = @api.inpost_get_sticker(@packcode,Dir::tmpdir)
-
-      sticker_status.should eq(true)
-      File.exist?(File.join(Dir::tmpdir, "#{@packcode}.pdf")).should eq(true)
-    end
-
-    it "should save sticker into pdf file at data_path if no path given" do
-      sticker_status = @api.inpost_get_sticker(@packcode)
-
-      sticker_status.should eq(true)
-      File.exist?(File.join(@api.data_adapter.data_path, "#{@packcode}.pdf")).should eq(true)
-
-      File.delete(File.join(@api.data_adapter.data_path, "#{@packcode}.pdf"))
-    end
-
-    it "should return false if packode given is empty" do
-      sticker_status = @api.inpost_get_sticker('')
-
-      sticker_status.should eq(false)
-    end
-
-    it "should return error message if invalid parameter given" do
-      sticker_status = @api.inpost_get_sticker('invalid')
-
-      sticker_status.should == 'Parcels with codes [invalid] not found'
-    end
-  end
-
 end

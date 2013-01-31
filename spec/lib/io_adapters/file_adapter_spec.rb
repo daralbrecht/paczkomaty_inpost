@@ -57,7 +57,9 @@ describe PaczkomatyInpost::FileAdapter do
         it 'should save given data as json in machines.dat file' do
           content = File.read(Dir::tmpdir + '/machines.dat')
 
-          content.should == "[{\"name\":\"ALL992\",\"street\":\"Piłsudskiego\",\"buildingnumber\":\"2/4 \",\"postcode\":\"95-070\",\"town\":\"Aleksandrów Łódzki\",\"latitude\":\"51.81284\",\"longitude\":\"19.31626\",\"paymentavailable\":false,\"operatinghours\":\"Paczkomat: 24/7\",\"locationdescription\":\"Przy markecie Polomarket\",\"paymentpointdescr\":null,\"partnerid\":0,\"paymenttype\":0,\"type\":\"Pack Machine\"}]"
+          JSON.parse(content).should == [{"name" => "ALL992", "street" => "Piłsudskiego", "buildingnumber" => "2/4 ", "postcode" => "95-070", "town" => "Aleksandrów Łódzki",
+                    "latitude" => "51.81284", "longitude" => "19.31626", "paymentavailable" => false, "operatinghours" => "Paczkomat: 24/7",
+                    "locationdescription" => "Przy markecie Polomarket", "paymentpointdescr" => nil, "partnerid" => 0, "paymenttype" => 0, "type" => "Pack Machine"}]
         end
       end
 
@@ -67,7 +69,8 @@ describe PaczkomatyInpost::FileAdapter do
         it 'should save given data as json in prices.dat file' do
           content = File.read(Dir::tmpdir + '/prices.dat')
 
-          content.should == "{\"on_delivery_payment\":\"3.50\",\"on_delivery_percentage\":\"1.80\",\"on_delivery_limit\":\"5000.00\",\"A\":\"6.99\",\"B\":\"8.99\",\"C\":\"11.99\",\"insurance\":{\"5000.00\":\"1.50\",\"10000.00\":\"2.50\",\"20000.00\":\"3.00\"}}"
+          JSON.parse(content).should == {"on_delivery_payment"=>"3.50", "on_delivery_percentage"=>"1.80", "on_delivery_limit"=>"5000.00",
+                  "A"=>"6.99", "B"=>"8.99", "C"=>"11.99", "insurance"=>{"5000.00"=>"1.50", "10000.00"=>"2.50", "20000.00"=>"3.00"}}
         end
       end
 
