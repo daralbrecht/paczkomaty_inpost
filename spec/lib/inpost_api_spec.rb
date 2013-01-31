@@ -490,4 +490,35 @@ describe PaczkomatyInpost::InpostAPI do
     end
   end
 
+
+  context 'inpost_set_customer_ref' do
+
+    before do
+      data_adapter = PaczkomatyInpost::FileAdapter.new('spec/assets')
+      request = PaczkomatyInpost::Request.new('test@testowy.pl','WqJevQy*X7')
+      @api = PaczkomatyInpost::InpostAPI.new(request,data_adapter)
+      pack = @api.inpost_prepare_pack('pack_1', 'test01@paczkomaty.pl', '501892456', 'KRA010',
+                            'A', '1.50', '9.99', 'testowa przesyłka')
+      response = @api.inpost_send_packs(pack)
+      @packcode = response['pack_1']['packcode']
+    end
+
+    it "should return true if customer ref was successful set" do
+      ref_status = @api.inpost_set_customer_ref(@packcode,'custom ref')
+
+      ref_status.should eq(true)
+    end
+
+    it "should return false if any given parameter is empty" do
+      ref_status = @api.inpost_set_customer_ref(@packcode,'')
+
+      ref_status.should eq(false)
+    end
+
+    it "should return error if invalid parameter given" do
+      ref_status = @api.inpost_set_customer_ref('invalid','ref')
+
+      ref_status.should == 'No delivery pack with code: invalid'
+    end
+  end
 end

@@ -159,5 +159,9 @@ module PaczkomatyInpost
       request.pay_for_pack(packcode)
     end
 
+    def inpost_set_customer_ref(packcode, customer_ref)
+      request.set_customer_ref(packcode, customer_ref)
+    end
+
   end
 end

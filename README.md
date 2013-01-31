@@ -7,7 +7,6 @@ Missing methods:
 - inpost_create_customer_partner(email, password, customerData)
 - inpost_get_sticker(email, password, packCode, labelType)
 - inpost_get_stickers(email, password, packCodes, labelType)
-- inpost_set_customer_ref(email, password, packCode, customerRef)
 - inpost_get_confirm_printout(email, password, packCodes, testPrintout)
 - inpost_get_packs_by_sender(email, password, parameters)
 - inpost_get_cod_report(email, password, parameters)

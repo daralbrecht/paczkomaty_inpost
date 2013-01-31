@@ -242,35 +242,38 @@ module PaczkomatyInpost
 
     def cancel_pack(packcode)
       if packcode.empty?
-        cancel_status = false
+        return false
       else
         params = {:email => username, :digest => digest, :packcode => packcode}
-        cancel_status = action_pack_status('/?do=cancelpack',params)
+        action_pack_status('/?do=cancelpack',params)
       end
-
-      return cancel_status
     end
 
     def change_packsize(packcode, packsize)
       if packcode.empty? || packsize.empty?
-        packsize_status = false
+        return false
       else
         params = {:email => username, :digest => digest, :packcode => packcode, :packsize => packsize}
-        packsize_status = action_pack_status('/?do=change_packsize',params)
+        action_pack_status('/?do=change_packsize',params)
       end
-
-      return packsize_status
     end
 
     def pay_for_pack(packcode)
       if packcode.empty?
-        pack_status = false
+        return false
       else
         params = {:email => username, :digest => digest, :packcode => packcode}
-        pack_status = action_pack_status('/?do=payforpack',params)
+        action_pack_status('/?do=payforpack',params)
       end
+    end
 
-      return pack_status
+    def set_customer_ref(packcode, customer_ref)
+      if packcode.empty? || customer_ref.empty?
+        return false
+      else
+        params = {:email => username, :digest => digest, :packcode => packcode, :customerref => customer_ref}
+        action_pack_status('/?do=setcustomerref',params)
+      end
     end
 
     def action_pack_status(action,params)
@@ -280,7 +283,11 @@ module PaczkomatyInpost
       xml = Nokogiri::XML(response)
       xml_error = xml.css('error')
       if xml_error.empty?
-        status = response == 1 ? true : false
+        if action == '/?do=setcustomerref'
+          status = response.include?('Set') ? true : false
+        else
+          status = response == 1 ? true : false
+        end
       else
         status = xml_error.text
       end
