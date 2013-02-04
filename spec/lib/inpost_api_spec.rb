@@ -447,16 +447,16 @@ describe PaczkomatyInpost::InpostAPI do
         sticker_status = @api.inpost_get_sticker(@packcode, :sticker_path => Dir::tmpdir)
 
         sticker_status.should eq(true)
-        File.exist?(File.join(Dir::tmpdir, "#{@packcode}.pdf")).should eq(true)
+        File.exist?(File.join(Dir::tmpdir, "sticker.#{@packcode}.pdf")).should eq(true)
       end
 
       it "should save sticker into pdf file at data_path if no path given" do
         sticker_status = @api.inpost_get_sticker(@packcode, :label_type => 'A6P')
 
         sticker_status.should eq(true)
-        File.exist?(File.join(@api.data_adapter.data_path, "#{@packcode}.pdf")).should eq(true)
+        File.exist?(File.join(@api.data_adapter.data_path, "sticker.#{@packcode}.pdf")).should eq(true)
 
-        File.delete(File.join(@api.data_adapter.data_path, "#{@packcode}.pdf"))
+        File.delete(File.join(@api.data_adapter.data_path, "sticker.#{@packcode}.pdf"))
       end
 
       it "should return false if packode given is empty" do
@@ -490,19 +490,19 @@ describe PaczkomatyInpost::InpostAPI do
       end
 
       it "should save stickers into pdf file at given path with packcodes used as filename and return true" do
-        stickers_status = @api.inpost_get_stickers(@packcodes, :sticker_path => Dir::tmpdir)
+        stickers_status = @api.inpost_get_stickers(@packcodes, :stickers_path => Dir::tmpdir)
 
         stickers_status.should eq(true)
-        File.exist?(File.join(Dir::tmpdir, "#{@packcodes.join('.')}.pdf")).should eq(true)
+        File.exist?(File.join(Dir::tmpdir, "stickers.#{@packcodes.join('.')}.pdf")).should eq(true)
       end
 
       it "should save stickers into pdf file at data_path if no path given" do
         stickers_status = @api.inpost_get_stickers(@packcodes, :label_type => 'A6P')
 
         stickers_status.should eq(true)
-        File.exist?(File.join(@api.data_adapter.data_path, "#{@packcodes.join('.')}.pdf")).should eq(true)
+        File.exist?(File.join(@api.data_adapter.data_path, "stickers.#{@packcodes.join('.')}.pdf")).should eq(true)
 
-        File.delete(File.join(@api.data_adapter.data_path, "#{@packcodes.join('.')}.pdf"))
+        File.delete(File.join(@api.data_adapter.data_path, "stickers.#{@packcodes.join('.')}.pdf"))
       end
 
       it "should return false if packodes given is empty array" do
@@ -527,6 +527,56 @@ describe PaczkomatyInpost::InpostAPI do
         sticker_status = @api.inpost_get_stickers('invalid parameter')
 
         sticker_status.should == 'Parcels with codes [invalid parameter] not found'
+      end
+    end
+
+    context 'inpost_get_confirm_printout' do
+
+      before do
+        pack_2 = @api.inpost_prepare_pack('pack_2', 'test01@paczkomaty.pl', '501892456', 'KRA010','B', '1.5', '10.11')
+        response = @api.inpost_send_packs(pack_2)
+        packcode_2 = response['pack_2']['packcode']
+
+        @packcodes = [@packcode, packcode_2]
+      end
+
+      it "should save printout into pdf file at given path with packcodes used as filename and return true" do
+        printout_status = @api.inpost_get_confirm_printout(@packcodes, :printout_path => Dir::tmpdir)
+
+        printout_status.should eq(true)
+        File.exist?(File.join(Dir::tmpdir, "confirm_printout.#{@packcodes.join('.')}.pdf")).should eq(true)
+      end
+
+      it "should save stickers into pdf file at data_path if no path given" do
+        printout_status = @api.inpost_get_confirm_printout(@packcodes)
+
+        printout_status.should eq(true)
+        File.exist?(File.join(@api.data_adapter.data_path, "confirm_printout.#{@packcodes.join('.')}.pdf")).should eq(true)
+        File.delete(File.join(@api.data_adapter.data_path, "confirm_printout.#{@packcodes.join('.')}.pdf"))
+      end
+
+      it "should return false if packodes given is empty array" do
+        printout_status = @api.inpost_get_confirm_printout([])
+
+        printout_status.should eq(false)
+      end
+
+      it "should return false if packodes given are nil" do
+        printout_status = @api.inpost_get_confirm_printout(nil)
+
+        printout_status.should eq(false)
+      end
+
+      it "should return false if packodes given are empty string" do
+        printout_status = @api.inpost_get_confirm_printout('')
+
+        printout_status.should eq(false)
+      end
+
+      it "should return error message if invalid parameter given" do
+        printout_status = @api.inpost_get_confirm_printout('invalid parameter')
+
+        printout_status.should == '[129] Nie znaleziono paczek do potwierdzenia'
       end
     end
 

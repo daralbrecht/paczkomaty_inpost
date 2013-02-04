@@ -69,18 +69,11 @@ module PaczkomatyInpost
       return data
     end
 
-    def save_sticker(sticker,packcode,path=nil)
-      file_path = sticker_path(path)
-      File.open(File.join(file_path, "#{packcode}.pdf"), 'w') do |f|
-        f.write sticker
-      end
-      return true
-    end
-
-    def save_stickers(stickers,packcodes,path=nil)
-      file_path = sticker_path(path)
-      File.open(File.join(file_path, "#{packcodes.join('.')}.pdf"), 'w') do |f|
-        f.write stickers
+    def save_pdf(file_content,packcodes,path,type)
+      file_path = get_file_path(path)
+      file_basename = packcodes.kind_of?(Array) ? packcodes.join('.') : packcodes
+      File.open(File.join(file_path, "#{type}.#{file_basename}.pdf"), 'w') do |f|
+        f.write file_content
       end
       return true
     end
@@ -99,15 +92,15 @@ module PaczkomatyInpost
     end
 
 
-    def sticker_path(path)
+    def get_file_path(path)
       if path.nil? || path.empty?
-        sticker_path = data_path
+        file_path = data_path
       else
-        sticker_path = Pathname.new(path)
-        validate_path(sticker_path)
+        file_path = Pathname.new(path)
+        validate_path(file_path)
       end
 
-      return sticker_path
+      return file_path
     end
 
   end

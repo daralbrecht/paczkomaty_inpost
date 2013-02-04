@@ -28,7 +28,7 @@ module PaczkomatyInpost
       data_adapter.respond_to?(:save_machine_list) && data_adapter.respond_to?(:cached_machines) &&
       data_adapter.respond_to?(:save_price_list) && data_adapter.respond_to?(:cached_prices) &&
       data_adapter.respond_to?(:last_update_machines) && data_adapter.respond_to?(:last_update_prices) &&
-      data_adapter.respond_to?(:save_sticker) && data_adapter.respond_to?(:save_stickers)
+      data_adapter.respond_to?(:save_pdf)
     end
 
     def inpost_machines_cache_is_valid?
@@ -157,20 +157,29 @@ module PaczkomatyInpost
     def inpost_get_sticker(packcode, options = {})
       sticker_options = {:sticker_path => nil, :label_type => ''}.merge!(options)
       sticker = request.get_sticker(packcode,sticker_options[:label_type])
-      if sticker != false && sticker.include?('PDF')
-        data_adapter.save_sticker(sticker,packcode,sticker_options[:sticker_path])
-      else
-        return sticker
-      end
+      file_status(sticker, packcode, sticker_options[:sticker_path],'sticker')
     end
 
     def inpost_get_stickers(packcodes, options = {})
-      sticker_options = {:sticker_path => nil, :label_type => ''}.merge!(options)
+      sticker_options = {:stickers_path => nil, :label_type => ''}.merge!(options)
       stickers = request.get_stickers(packcodes,sticker_options[:label_type])
-      if stickers != false && stickers.include?('PDF')
-        data_adapter.save_stickers(stickers,packcodes,sticker_options[:sticker_path])
+      file_status(stickers, packcodes, sticker_options[:stickers_path],'stickers')
+    end
+
+    def inpost_get_confirm_printout(packcodes, options = {})
+      printout_options = {:printout_path => nil, :test_printout => false}.merge!(options)
+      printout = request.get_confirm_printout(packcodes,printout_options[:test_printout])
+      file_status(printout, packcodes, printout_options[:printout_path],'confirm_printout')
+    end
+
+
+    private
+
+    def file_status(file_content,packcodes,path,type)
+      if file_content != false && file_content.include?('PDF')
+        data_adapter.save_pdf(file_content, packcodes, path, type)
       else
-        return stickers
+        return file_content
       end
     end
 

@@ -53,6 +53,19 @@ module PaczkomatyInpost
         end
       end
     end
-  end
 
+    def generate_xml_for_confirm_printout(packcodes,test_printout)
+      xml.paczkomaty do
+        xml.testprintout test_printout
+        if packcodes.kind_of?(Array)
+          packcodes.each {|code| xml.pack { xml.packcode code }}
+        else
+          xml.pack { xml.packcode packcodes }
+        end
+      end
+
+      return xml
+    end
+
+  end
 end

@@ -194,7 +194,7 @@ module PaczkomatyInpost
     end
 
     def cancel_pack(packcode)
-      if packcode.empty?
+      if empty_param?(packcode)
         return false
       else
         params = {:email => username, :digest => digest, :packcode => packcode}
@@ -203,7 +203,7 @@ module PaczkomatyInpost
     end
 
     def change_packsize(packcode, packsize)
-      if packcode.empty? || packsize.empty?
+      if empty_param?(packcode) || empty_param?(packsize)
         return false
       else
         params = {:email => username, :digest => digest, :packcode => packcode, :packsize => packsize}
@@ -212,7 +212,7 @@ module PaczkomatyInpost
     end
 
     def pay_for_pack(packcode)
-      if packcode.empty?
+      if empty_param?(packcode)
         return false
       else
         params = {:email => username, :digest => digest, :packcode => packcode}
@@ -221,7 +221,7 @@ module PaczkomatyInpost
     end
 
     def set_customer_ref(packcode, customer_ref)
-      if packcode.empty? || customer_ref.empty?
+      if empty_param?(packcode) || empty_param?(customer_ref)
         return false
       else
         params = {:email => username, :digest => digest, :packcode => packcode, :customerref => customer_ref}
@@ -231,7 +231,7 @@ module PaczkomatyInpost
 
     def get_sticker(packcode,label_type)
       label_type = '' if label_type.nil?
-      if packcode.nil? || packcode.empty?
+      if empty_param?(packcode)
         return false
       else
         params = {:email => username, :digest => digest, :packcode => packcode, :labeltype => label_type}
@@ -241,11 +241,21 @@ module PaczkomatyInpost
 
     def get_stickers(packcodes,label_type)
       label_type = '' if label_type.nil?
-      if packcodes.nil? || packcodes.empty?
+      if empty_param?(packcodes)
         return false
       else
         params = {:email => username, :digest => digest, :packcodes => packcodes, :labeltype => label_type}
         action_pack_status('/?do=getstickers',params)
+      end
+    end
+
+    def get_confirm_printout(packcodes,test_printout)
+      if empty_param?(packcodes)
+        return false
+      else
+        xml_packs_data = XmlGenerator.new.generate_xml_for_confirm_printout(packcodes, (test_printout ? 1 : 0))
+        params = {:email => username, :digest => digest, :content => xml_packs_data.target!}
+        action_pack_status('/?do=getconfirmprintout',params)
       end
     end
 
@@ -258,7 +268,7 @@ module PaczkomatyInpost
       if xml_error.empty?
         if action == '/?do=setcustomerref'
           status = response.include?('Set') ? true : false
-        elsif action == '/?do=getsticker' || action == '/?do=getstickers'
+        elsif ['/?do=getsticker', '/?do=getstickers', '/?do=getconfirmprintout'].include? action
           status = response.include?('PDF') ? response : false
         else
           status = response == 1 ? true : false
@@ -307,5 +317,10 @@ module PaczkomatyInpost
 
       return params.join('&')
     end
+
+    def empty_param?(param)
+      param.nil? || param.empty?
+    end
+
   end
 end

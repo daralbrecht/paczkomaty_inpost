@@ -118,26 +118,26 @@ describe PaczkomatyInpost::FileAdapter do
 
       context 'save_sticker' do
 
-        it 'should save given content into pdf file named by packcode in given path' do
-          save_response = @adapter.save_sticker('custom sticker','custom_packcode','spec/assets')
-          content = File.read('spec/assets/custom_packcode.pdf')
+        it 'should save given content into pdf file named by type and packcode in given path' do
+          save_response = @adapter.save_pdf('custom sticker','custom_packcode','spec/assets','sticker')
+          content = File.read('spec/assets/sticker.custom_packcode.pdf')
 
           save_response.should eq(true)
           content.should == 'custom sticker'
 
-          File.delete('spec/assets/custom_packcode.pdf')
+          File.delete('spec/assets/sticker.custom_packcode.pdf')
         end
 
-        it 'should save given content into pdf file named by packcode in data_path if no path given' do
-          save_response = @adapter.save_sticker('custom sticker','custom_packcode')
-          content = File.read(Dir::tmpdir + '/custom_packcode.pdf')
+        it 'should save given content into pdf file named by type and packcode in data_path if no path given' do
+          save_response = @adapter.save_pdf('custom sticker','custom_packcode', nil, 'sticker')
+          content = File.read(Dir::tmpdir + '/sticker.custom_packcode.pdf')
 
           save_response.should eq(true)
           content.should == 'custom sticker'
         end
 
         it 'should raise error if invalid path given' do
-          lambda { @adapter.save_sticker('custom sticker','custom_packcode','/') }.should raise_error(Errno::EACCES)
+          lambda { @adapter.save_pdf('custom sticker','custom_packcode','/', 'sticker') }.should raise_error(Errno::EACCES)
         end
       end
 
