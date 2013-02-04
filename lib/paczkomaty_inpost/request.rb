@@ -230,11 +230,22 @@ module PaczkomatyInpost
     end
 
     def get_sticker(packcode,label_type)
-      if packcode.empty?
+      label_type = '' if label_type.nil?
+      if packcode.nil? || packcode.empty?
         return false
       else
         params = {:email => username, :digest => digest, :packcode => packcode, :labeltype => label_type}
         action_pack_status('/?do=getsticker',params)
+      end
+    end
+
+    def get_stickers(packcodes,label_type)
+      label_type = '' if label_type.nil?
+      if packcodes.nil? || packcodes.empty?
+        return false
+      else
+        params = {:email => username, :digest => digest, :packcodes => packcodes, :labeltype => label_type}
+        action_pack_status('/?do=getstickers',params)
       end
     end
 
@@ -247,7 +258,7 @@ module PaczkomatyInpost
       if xml_error.empty?
         if action == '/?do=setcustomerref'
           status = response.include?('Set') ? true : false
-        elsif action == '/?do=getsticker'
+        elsif action == '/?do=getsticker' || action == '/?do=getstickers'
           status = response.include?('PDF') ? response : false
         else
           status = response == 1 ? true : false
@@ -278,10 +289,20 @@ module PaczkomatyInpost
       return response.body.gsub('"',"'").to_my_utf8
     end
 
-    def http_build_query(data)
+    def http_build_query(data,parent_key='')
       params = []
-      data.each do |k,v|
-        params << "#{Rack::Utils.escape(k)}=#{Rack::Utils.escape(v)}"
+      if data.kind_of?(Array) && !parent_key.to_s.empty?
+        data.each_with_index do |value, index|
+          params << "#{Rack::Utils.escape(parent_key)}[#{index}]=#{Rack::Utils.escape(value)}"
+        end
+      elsif data.kind_of?(Hash)
+        data.each do |key,value|
+          if value.kind_of?(Array)
+            params << http_build_query(value,key)
+          else
+            params << "#{Rack::Utils.escape(key)}=#{Rack::Utils.escape(value)}"
+          end
+        end
       end
 
       return params.join('&')

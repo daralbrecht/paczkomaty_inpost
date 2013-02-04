@@ -70,17 +70,18 @@ module PaczkomatyInpost
     end
 
     def save_sticker(sticker,packcode,path=nil)
-      if path.nil? || path.empty?
-        sticker_path = data_path
-      else
-        sticker_path = Pathname.new(path)
-        validate_path(sticker_path)
-      end
-
-      File.open(File.join(sticker_path, "#{packcode}.pdf"), 'w') do |f|
+      file_path = sticker_path(path)
+      File.open(File.join(file_path, "#{packcode}.pdf"), 'w') do |f|
         f.write sticker
       end
+      return true
+    end
 
+    def save_stickers(stickers,packcodes,path=nil)
+      file_path = sticker_path(path)
+      File.open(File.join(file_path, "#{packcodes.join('.')}.pdf"), 'w') do |f|
+        f.write stickers
+      end
       return true
     end
 
@@ -95,6 +96,18 @@ module PaczkomatyInpost
       if path.nil? || !path.writable?
         raise Errno::EACCES, "Given path is not writeable"
       end
+    end
+
+
+    def sticker_path(path)
+      if path.nil? || path.empty?
+        sticker_path = data_path
+      else
+        sticker_path = Pathname.new(path)
+        validate_path(sticker_path)
+      end
+
+      return sticker_path
     end
 
   end

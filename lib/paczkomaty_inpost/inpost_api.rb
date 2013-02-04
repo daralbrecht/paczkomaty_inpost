@@ -28,7 +28,7 @@ module PaczkomatyInpost
       data_adapter.respond_to?(:save_machine_list) && data_adapter.respond_to?(:cached_machines) &&
       data_adapter.respond_to?(:save_price_list) && data_adapter.respond_to?(:cached_prices) &&
       data_adapter.respond_to?(:last_update_machines) && data_adapter.respond_to?(:last_update_prices) &&
-      data_adapter.respond_to?(:save_sticker)
+      data_adapter.respond_to?(:save_sticker) && data_adapter.respond_to?(:save_stickers)
     end
 
     def inpost_machines_cache_is_valid?
@@ -161,6 +161,16 @@ module PaczkomatyInpost
         data_adapter.save_sticker(sticker,packcode,sticker_options[:sticker_path])
       else
         return sticker
+      end
+    end
+
+    def inpost_get_stickers(packcodes, options = {})
+      sticker_options = {:sticker_path => nil, :label_type => ''}.merge!(options)
+      stickers = request.get_stickers(packcodes,sticker_options[:label_type])
+      if stickers != false && stickers.include?('PDF')
+        data_adapter.save_stickers(stickers,packcodes,sticker_options[:sticker_path])
+      else
+        return stickers
       end
     end
 
