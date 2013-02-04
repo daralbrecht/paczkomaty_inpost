@@ -172,6 +172,29 @@ module PaczkomatyInpost
       file_status(printout, packcodes, printout_options[:printout_path],'confirm_printout')
     end
 
+    def inpost_create_customer_partner(options={})
+      customer_options = {:email => nil,
+                          :mobile_number => nil,
+                          :prefered_box_machine_name => nil,
+                          :alternative_box_machine_name => nil,
+                          :phone_num => nil,
+                          :street => nil,
+                          :town => nil,
+                          :post_code => nil,
+                          :building => nil,
+                          :flat => nil,
+                          :first_name => nil,
+                          :last_name => nil,
+                          :company_name => nil,
+                          :regon => nil,
+                          :nip => nil}.merge!(options)
+      if invalid_customer? customer_options
+        raise 'Missing data for creating Inpost customer account!'
+      else
+        request.create_customer_partner(customer_options)
+      end
+    end
+
 
     private
 
@@ -181,6 +204,10 @@ module PaczkomatyInpost
       else
         return file_content
       end
+    end
+
+    def invalid_customer?(customer_options)
+      customer_options[:email].nil? || customer_options[:prefered_box_machine_name].nil? || customer_options[:post_code].nil? || customer_options[:phone_num].nil?
     end
 
   end

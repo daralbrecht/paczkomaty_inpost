@@ -530,6 +530,7 @@ describe PaczkomatyInpost::InpostAPI do
       end
     end
 
+
     context 'inpost_get_confirm_printout' do
 
       before do
@@ -577,6 +578,28 @@ describe PaczkomatyInpost::InpostAPI do
         printout_status = @api.inpost_get_confirm_printout('invalid parameter')
 
         printout_status.should == '[129] Nie znaleziono paczek do potwierdzenia'
+      end
+    end
+
+
+    context 'inpost_create_customer_partner' do
+
+      it "should throw error if required attributes are missing" do
+        lambda { @api.inpost_create_customer_partner(:post_code => '83-200', :email => 'test@example.com') }.should raise_error(RuntimeError)
+      end
+
+      it "should return error message if account can't be created" do
+        response = @api.inpost_create_customer_partner(:post_code => '83-200', :email => 'test', :mobile_number => '506783560',
+                                                       :prefered_box_machine_name => 'KRA010', :phone_num => '945646789')
+
+        response.should == 'Błędny adres e-mail w argumencie wywołania test'
+      end
+
+      it "should return email of new account if successfuly created" do
+        response = @api.inpost_create_customer_partner(:post_code => '83-200', :email => 'test@example.com', :mobile_number => '506783560',
+                                            :prefered_box_machine_name => 'KRA010', :phone_num => '945646789', :street => 'My Street')
+
+        response.should == 'test@example.com'
       end
     end
 

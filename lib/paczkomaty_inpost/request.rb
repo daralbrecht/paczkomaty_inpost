@@ -259,7 +259,7 @@ module PaczkomatyInpost
       end
     end
 
-    def action_pack_status(action,params)
+    def action_pack_status(action,params,key='')
       data = http_build_query(params)
       response = get_https_response(data,action)
 
@@ -270,6 +270,8 @@ module PaczkomatyInpost
           status = response.include?('Set') ? true : false
         elsif ['/?do=getsticker', '/?do=getstickers', '/?do=getconfirmprintout'].include? action
           status = response.include?('PDF') ? response : false
+        elsif action == '/?do=createcustomerpartner'
+          status = response.include?(key) ? xml.css('email').text : false
         else
           status = response == 1 ? true : false
         end
@@ -278,6 +280,16 @@ module PaczkomatyInpost
       end
 
       return status
+    end
+
+    def create_customer_partner(customer_data)
+      if empty_param?(customer_data)
+        return false
+      else
+        xml_customer = XmlGenerator.new.generate_xml_for_customer(customer_data)
+        params = {:email => username, :digest => digest, :content => xml_customer.target!}
+        action_pack_status('/?do=createcustomerpartner',params,customer_data[:email])
+      end
     end
 
 

@@ -67,5 +67,29 @@ module PaczkomatyInpost
       return xml
     end
 
+    def generate_xml_for_customer(customer_data)
+      xml.paczkomaty do
+        xml.customer do
+          xml.email customer_data[:email]
+          xml.mobileNumber customer_data[:mobile_number] unless customer_data[:mobile_number].nil?
+          xml.preferedBoxMachineName customer_data[:prefered_box_machine_name]
+          xml.alternativeBoxMachineName customer_data[:alternative_box_machine_name] unless customer_data[:alternative_box_machine_name].nil?
+          xml.phoneNum customer_data[:phone_num]
+          xml.street customer_data[:street] unless customer_data[:street].nil?
+          xml.town customer_data[:town] unless customer_data[:town].nil?
+          xml.postCode customer_data[:post_code]
+          xml.building customer_data[:building] unless customer_data[:building].nil?
+          xml.flat customer_data[:flat] unless customer_data[:flat].nil?
+          xml.firstName customer_data[:first_name] unless customer_data[:first_name].nil?
+          xml.lastName customer_data[:last_name] unless customer_data[:last_name].nil?
+          xml.companyName customer_data[:company_name] unless customer_data[:company_name].nil?
+          xml.regon customer_data[:regon] unless customer_data[:regon].nil?
+          xml.nip customer_data[:nip] unless customer_data[:nip].nil?
+        end
+      end
+
+      return xml
+    end
+
   end
 end
