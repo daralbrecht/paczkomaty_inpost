@@ -34,24 +34,24 @@ module PaczkomatyInpost
       self.params = request.get_params
     end
 
-    def inpost_machines_cache_is_valid?(update_params=true)
+    def inpost_machines_cache_is_valid?(update_params=false)
       inpost_get_params if update_params
-      data_adapter.last_update_machines == params[:last_update]
+      data_adapter.last_update_machines >= params[:last_update]
     end
 
-    def inpost_prices_cache_is_valid?(update_params=true)
+    def inpost_prices_cache_is_valid?(update_params=false)
       inpost_get_params if update_params
-      data_adapter.last_update_prices == params[:last_update]
+      data_adapter.last_update_prices >= params[:last_update]
     end
 
-    def inpost_update_machine_list
-      inpost_get_params
+    def inpost_update_machine_list(update_params=false)
+      inpost_get_params if update_params
       data = request.download_machines
       data_adapter.save_machine_list(data, params[:last_update])
     end
 
-    def inpost_update_price_list
-      inpost_get_params
+    def inpost_update_price_list(update_params=false)
+      inpost_get_params if update_params
       data = request.download_pricelist
       data_adapter.save_price_list(data, params[:last_update])
     end
@@ -202,6 +202,14 @@ module PaczkomatyInpost
       report_options = {:start_date => (DateTime.now - 60),
                         :end_date => (DateTime.now)}.merge!(options)
       request.get_cod_report(report_options[:start_date].strftime("%Y-%m-%d"),report_options[:end_date].strftime("%Y-%m-%d"))
+    end
+
+    def inpost_get_packs_by_sender(options={})
+      packs_options = {:status => 'Prepared',
+                        :start_date => (DateTime.now - 60),
+                        :end_date => DateTime.now,
+                        :is_conf_printed => false}.merge!(options)
+      request.get_packs_by_sender(packs_options[:status],packs_options[:start_date].strftime("%Y-%m-%d"),packs_options[:end_date].strftime("%Y-%m-%d"),packs_options[:is_conf_printed])
     end
 
 

@@ -284,6 +284,15 @@ module PaczkomatyInpost
       end
     end
 
+    def get_packs_by_sender(status,start_date,end_date,is_conf_printed)
+      if start_date.nil? || end_date.nil? || status.nil? || is_conf_printed.nil?
+        return false
+      else
+        params = {:email => username, :digest => digest, :status => status, :startdate => start_date, :enddate => end_date, :is_conf_printed => (is_conf_printed ? 1 : 0)}
+        action_pack_status('/?do=getpacksbysender',params)
+      end
+    end
+
     def action_pack_status(action,params,key='')
       data = http_build_query(params)
       response = get_https_response(data,action)
@@ -299,6 +308,8 @@ module PaczkomatyInpost
           status = response.include?(key) ? xml.css('email').text : false
         elsif action == '/?do=getcodreport'
           status = generate_cod_report(xml)
+        elsif action == '/?do=getpacksbysender'
+          status = generate_packs_for_sender(xml)
         else
           status = response == 1 ? true : false
         end
@@ -372,11 +383,39 @@ module PaczkomatyInpost
             :packcode => item.css('packcode').text,
             :transactiondate => item.css('transactiondate').text
           }
-          payments << payment
+          payments[item.css('packcode').text] = payment
         end
       end
 
       return payments
+    end
+
+    def generate_packs_for_sender(xml)
+      packs = {}
+      xml_packs = xml.css('pack')
+      unless xml_packs.empty?
+        xml_packs.each do |item|
+          pack = {
+            :packcode => item.css('packcode').text,
+            :packsize => item.css('packsize').text,
+            :amountcharged => item.css('amountcharged').text,
+            :calculatedchargeamount => item.css('calculatedchargeamount').text,
+            :creationdate => item.css('creationdate').text,
+            :labelcreationtime => item.css('labelcreationtime').text,
+            :customerdeliveringcode => item.css('customerdeliveringcode').text,
+            :status => item.css('status').text,
+            :is_conf_printed => item.css('is_conf_printed').text,
+            :labelprinted => item.css('labelprinted').text,
+            :receiveremail => item.css('receiveremail').text,
+            :ondeliveryamount => item.css('ondeliveryamount').text,
+            :preferedboxmachinename => item.css('preferedboxmachinename').text,
+            :alternativeboxmachinename => item.css('alternativeboxmachinename').text
+          }
+          packs[item.css('packcode').text] = pack
+        end
+      end
+
+      return packs
     end
 
   end

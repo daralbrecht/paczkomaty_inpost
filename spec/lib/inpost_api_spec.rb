@@ -70,7 +70,7 @@ describe PaczkomatyInpost::InpostAPI do
       end
 
       it "should return false if machines data is out of date" do
-        @api.params[:last_update] = '1000000000'
+        @api.params[:last_update] = '2959396000'
         @api.inpost_machines_cache_is_valid?(false).should equal(false)
       end
     end
@@ -83,7 +83,7 @@ describe PaczkomatyInpost::InpostAPI do
       end
 
       it "should return false if prices data is out of date" do
-        @api.params[:last_update] = '1000000000'
+        @api.params[:last_update] = '2959396000'
         @api.inpost_prices_cache_is_valid?(false).should equal(false)
       end
     end
@@ -625,6 +625,25 @@ describe PaczkomatyInpost::InpostAPI do
       # it "should return payment report for last 60 days if no data given" do
       #   # can't test it with test account - stub it later
       # end
+    end
+
+    # tests not finished - disconnects with api prevents testing
+    context 'inpost_get_packs_by_sender' do
+
+      it "should return error if given start and end date have more than 60 days of difference" do
+        response = @api.inpost_get_packs_by_sender(:status => 'Prepared', :is_conf_printed => false, :start_date => (DateTime.now - 100), :end_date => (DateTime.now + 20))
+
+        response.should == 'Maksymalna liczba dni pomiędzy datami to 60'
+      end
+
+      it "should return hash with packs by sender if valid data given" do
+        response = @api.inpost_get_packs_by_sender(:status => 'Prepared', :is_conf_printed => false)
+
+        response[@packcode].should be_a_kind_of(Hash)
+        response[@packcode].keys.should =~ [:alternativeboxmachinename, :amountcharged, :calculatedchargeamount, :creationdate,
+          :customerdeliveringcode, :is_conf_printed, :labelcreationtime, :labelprinted, :ondeliveryamount, :packcode, :packsize,
+          :preferedboxmachinename, :receiveremail, :status]
+      end
     end
 
   end
