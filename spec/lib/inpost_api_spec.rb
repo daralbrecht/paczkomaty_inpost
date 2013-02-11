@@ -66,12 +66,12 @@ describe PaczkomatyInpost::InpostAPI do
 
       it "should return true if machines data is valid" do
         @api.params[:last_update] = '1359396000'
-        @api.inpost_machines_cache_is_valid?.should equal(true)
+        @api.inpost_machines_cache_is_valid?(false).should equal(true)
       end
 
       it "should return false if machines data is out of date" do
         @api.params[:last_update] = '1000000000'
-        @api.inpost_machines_cache_is_valid?.should equal(false)
+        @api.inpost_machines_cache_is_valid?(false).should equal(false)
       end
     end
 
@@ -79,12 +79,12 @@ describe PaczkomatyInpost::InpostAPI do
 
       it "should return true if prices data is valid" do
         @api.params[:last_update] = '1359406810'
-        @api.inpost_prices_cache_is_valid?.should equal(true)
+        @api.inpost_prices_cache_is_valid?(false).should equal(true)
       end
 
       it "should return false if prices data is out of date" do
         @api.params[:last_update] = '1000000000'
-        @api.inpost_prices_cache_is_valid?.should equal(false)
+        @api.inpost_prices_cache_is_valid?(false).should equal(false)
       end
     end
   end
@@ -601,6 +601,30 @@ describe PaczkomatyInpost::InpostAPI do
 
         response.should == 'test@example.com'
       end
+    end
+
+
+    context 'inpost_get_cod_report' do
+
+      it "should return error if given start and end date have more than 60 days of difference" do
+        response = @api.inpost_get_cod_report(:start_date => (DateTime.now - 100), :end_date => DateTime.now)
+
+        response.should == 'Maksymalna liczba dni pomiędzy datami to 60'
+      end
+
+      it "should return error if no result data is given" do
+        response = @api.inpost_get_cod_report
+
+        response.should == 'NO_RESULTS_FOR_GIVEN_QUERY'
+      end
+
+      # it "should return array with payment report if valid data given" do
+      #   # can't test it with test account - stub it later
+      # end
+
+      # it "should return payment report for last 60 days if no data given" do
+      #   # can't test it with test account - stub it later
+      # end
     end
 
   end

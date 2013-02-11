@@ -1,6 +1,7 @@
 # encoding: UTF-8
 require "net/https"
 require "uri"
+require "date"
 
 module PaczkomatyInpost
 
@@ -12,10 +13,8 @@ module PaczkomatyInpost
     def initialize(username, password, data_adapter)
       self.data_adapter = data_adapter
       self.request = PaczkomatyInpost::Request.new(username, password)
-
       inpost_check_environment
-
-      self.params = self.request.inpost_get_params
+      inpost_get_params
     end
 
     def inpost_check_environment
@@ -31,25 +30,29 @@ module PaczkomatyInpost
       data_adapter.respond_to?(:save_pdf)
     end
 
-    def inpost_machines_cache_is_valid?
-      request.inpost_get_params
+    def inpost_get_params
+      self.params = request.get_params
+    end
+
+    def inpost_machines_cache_is_valid?(update_params=true)
+      inpost_get_params if update_params
       data_adapter.last_update_machines == params[:last_update]
     end
 
-    def inpost_prices_cache_is_valid?
-      request.inpost_get_params
+    def inpost_prices_cache_is_valid?(update_params=true)
+      inpost_get_params if update_params
       data_adapter.last_update_prices == params[:last_update]
     end
 
     def inpost_update_machine_list
-      request.inpost_get_params
-      data = request.inpost_download_machines
+      inpost_get_params
+      data = request.download_machines
       data_adapter.save_machine_list(data, params[:last_update])
     end
 
     def inpost_update_price_list
-      request.inpost_get_params
-      data = request.inpost_download_pricelist
+      inpost_get_params
+      data = request.download_pricelist
       data_adapter.save_price_list(data, params[:last_update])
     end
 
@@ -88,7 +91,7 @@ module PaczkomatyInpost
 
     def inpost_find_nearest_machines(postcode,paymentavailable=nil)
       post_code = postcode.gsub(' ','')
-      nearest_machines = request.inpost_download_nearest_machines(post_code,paymentavailable)
+      nearest_machines = request.download_nearest_machines(post_code,paymentavailable)
       cache = data_adapter.cached_machines
       result_list = []
 
@@ -105,7 +108,7 @@ module PaczkomatyInpost
     end
 
     def inpost_find_customer(email)
-      request.inpost_download_customer_preferences(email)
+      request.download_customer_preferences(email)
     end
 
     def inpost_prepare_pack(temp_id, adresee_email, phone_num, box_machine_name, pack_type, insurance_amount, on_delivery_amount, options={})
@@ -193,6 +196,12 @@ module PaczkomatyInpost
       else
         request.create_customer_partner(customer_options)
       end
+    end
+
+    def inpost_get_cod_report(options={})
+      report_options = {:start_date => (DateTime.now - 60),
+                        :end_date => (DateTime.now)}.merge!(options)
+      request.get_cod_report(report_options[:start_date].strftime("%Y-%m-%d"),report_options[:end_date].strftime("%Y-%m-%d"))
     end
 
 

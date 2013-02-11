@@ -6,6 +6,7 @@ require 'base64'
 require 'digest/md5'
 require 'builder'
 require 'rack'
+require 'timeout'
 
 module PaczkomatyInpost
 
@@ -19,11 +20,16 @@ module PaczkomatyInpost
       self.password = password
     end
 
-    def inpost_get_params
+    def get_params
       params = {}
 
       uri = URI.parse("#{PaczkomatyInpost.inpost_api_url}/?do=getparams")
-      response = Net::HTTP.get_response(uri)
+      begin
+        response = Net::HTTP.get_response(uri)
+      rescue SystemCallError
+        raise Timeout::Error, 'Connection timeout while connecting to Paczkomaty API'
+      end
+
       xml_doc = Nokogiri::XML(response.body)
 
       xml_doc.xpath('./paczkomaty/*').each do |param|
@@ -38,7 +44,7 @@ module PaczkomatyInpost
       @digest ||= Base64.encode64(Digest::MD5.digest(password)).chomp
     end
 
-    def inpost_download_machines
+    def download_machines
       machines = []
 
       csv_content = get_response("/?do=listmachines_csv")
@@ -71,7 +77,7 @@ module PaczkomatyInpost
       end
     end
 
-    def inpost_download_nearest_machines(postcode,paymentavailable)
+    def download_nearest_machines(postcode,paymentavailable)
       machines = []
       payment_available = ''
       unless paymentavailable.nil?
@@ -101,7 +107,7 @@ module PaczkomatyInpost
       return machines
     end
 
-    def inpost_download_pricelist
+    def download_pricelist
       pricelist = {}
 
       xml_content = get_response("/?do=pricelist")
@@ -130,7 +136,7 @@ module PaczkomatyInpost
       return pricelist
     end
 
-    def inpost_download_customer_preferences(email)
+    def download_customer_preferences(email)
       preferences = {}
 
       xml_content = get_response("/?do=findcustomer&email=#{email}")
@@ -259,6 +265,25 @@ module PaczkomatyInpost
       end
     end
 
+    def create_customer_partner(customer_data)
+      if empty_param?(customer_data)
+        return false
+      else
+        xml_customer = XmlGenerator.new.generate_xml_for_customer(customer_data)
+        params = {:email => username, :digest => digest, :content => xml_customer.target!}
+        action_pack_status('/?do=createcustomerpartner',params,customer_data[:email])
+      end
+    end
+
+    def get_cod_report(start_date,end_date)
+      if start_date.nil? || end_date.nil?
+        return false
+      else
+        params = {:email => username, :digest => digest, :startdate => start_date, :enddate =>end_date}
+        action_pack_status('/?do=getcodreport',params)
+      end
+    end
+
     def action_pack_status(action,params,key='')
       data = http_build_query(params)
       response = get_https_response(data,action)
@@ -272,32 +297,30 @@ module PaczkomatyInpost
           status = response.include?('PDF') ? response : false
         elsif action == '/?do=createcustomerpartner'
           status = response.include?(key) ? xml.css('email').text : false
+        elsif action == '/?do=getcodreport'
+          status = generate_cod_report(xml)
         else
           status = response == 1 ? true : false
         end
       else
-        status = xml_error.text
+        status = xml_error.text.empty? ? xml_error.attribute('key').text : xml_error.text
       end
 
       return status
     end
 
-    def create_customer_partner(customer_data)
-      if empty_param?(customer_data)
-        return false
-      else
-        xml_customer = XmlGenerator.new.generate_xml_for_customer(customer_data)
-        params = {:email => username, :digest => digest, :content => xml_customer.target!}
-        action_pack_status('/?do=createcustomerpartner',params,customer_data[:email])
-      end
-    end
 
 
     private
 
     def get_response(params)
       uri = URI.parse("#{PaczkomatyInpost.inpost_api_url}#{params}")
-      response = Net::HTTP.get_response(uri)
+      begin
+        response = Net::HTTP.get_response(uri)
+      rescue SystemCallError
+        raise Timeout::Error, 'Connection timeout while connecting to Paczkomaty API'
+      end
+
       return response.body.gsub('"',"'").to_my_utf8
     end
 
@@ -306,7 +329,11 @@ module PaczkomatyInpost
       https.use_ssl = true
       https.verify_mode = OpenSSL::SSL::VERIFY_NONE
       headers = {'Content-Type'=> 'application/x-www-form-urlencoded'}
-      response = https.post(path, params, headers)
+      begin
+        response = https.post(path, params, headers)
+      rescue SystemCallError
+        raise Timeout::Error, 'Connection timeout while connecting to Paczkomaty API'
+      end
 
       return response.body.gsub('"',"'").to_my_utf8
     end
@@ -332,6 +359,24 @@ module PaczkomatyInpost
 
     def empty_param?(param)
       param.nil? || param.empty?
+    end
+
+    def generate_cod_report(xml)
+      payments = {}
+      xml_payments = xml.css('payment')
+      unless xml_payments.empty?
+        xml_payments.each do |item|
+          payment = {
+            :amount => item.css('amount').text,
+            :posdesc => item.css('posdesc').text,
+            :packcode => item.css('packcode').text,
+            :transactiondate => item.css('transactiondate').text
+          }
+          payments << payment
+        end
+      end
+
+      return payments
     end
 
   end
