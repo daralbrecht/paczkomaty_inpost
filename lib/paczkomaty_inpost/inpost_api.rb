@@ -205,10 +205,10 @@ module PaczkomatyInpost
     end
 
     def inpost_get_packs_by_sender(options={})
-      packs_options = {:status => 'Prepared',
-                        :start_date => (DateTime.now - 60),
-                        :end_date => DateTime.now,
-                        :is_conf_printed => false}.merge!(options)
+      packs_options = {:status => '',
+                       :start_date => (DateTime.now - 60),
+                       :end_date => DateTime.now,
+                       :is_conf_printed => ''}.merge!(options)
       request.get_packs_by_sender(packs_options[:status],packs_options[:start_date].strftime("%Y-%m-%d"),packs_options[:end_date].strftime("%Y-%m-%d"),packs_options[:is_conf_printed])
     end
 

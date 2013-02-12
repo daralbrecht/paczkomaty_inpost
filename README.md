@@ -318,16 +318,14 @@ Prawidłowo zakończona operacja zwraca hash zawierający kolejne paczki:
 
 ### inpost_get_packs_by_sender(options={})
 
-! Metoda nie przetestowana! Testy w drodze :)
-
 Metoda pozwala uzyskać informację na temat paczek wygenerowanych w systemie przez określonego nadawcę.
 Dopuszczalne opcje:
-- status - status paczek,
+- status - status paczek (w przypadku braku lub błędnie wprowadzonego statusu zwrócone zostaną paczki dla wszystkich możliwych),
 - start_date - data początkowa,
 - end_date - data końcowa,
-- is_conf_printed - czy potwierdzenie nadania wydrukowane.
+- is_conf_printed - czy potwierdzenie nadania wydrukowane (w przypadku braku domyślnie wskazane na false).
 
-Zwraca hash z odnalezionymi przesyłkami. Kluczami do poszczególnych paczek są packcode'y. Struktura zwróconej paczki wygląda następująco:
+Zwraca hash z odnalezionymi przesyłkami. Kluczami do poszczególnych paczek są packcode'y. W przypadku braku paczek określonych parametrami metoda zwraca pusty Hash. Struktura zwróconej paczki wygląda następująco:
 ```ruby
 {
   :packcode => {
@@ -349,7 +347,7 @@ Zwraca hash z odnalezionymi przesyłkami. Kluczami do poszczególnych paczek są
 }
 ```
 
-W przypadku błedu zwraca false (gdy brak lub błędne parametry przekazane) lub wiadomość o błedzie w postaci String'a.
+W przypadku błedu zwraca false lub wiadomość o błedzie w postaci String'a.
 
 
 

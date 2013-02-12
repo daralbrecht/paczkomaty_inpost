@@ -285,10 +285,17 @@ module PaczkomatyInpost
     end
 
     def get_packs_by_sender(status,start_date,end_date,is_conf_printed)
-      if start_date.nil? || end_date.nil? || status.nil? || is_conf_printed.nil?
+      if start_date.nil? || end_date.nil? || status.nil?
         return false
       else
-        params = {:email => username, :digest => digest, :status => status, :startdate => start_date, :enddate => end_date, :is_conf_printed => (is_conf_printed ? 1 : 0)}
+        if is_conf_printed == true
+          conf_printed = '1'
+        elsif is_conf_printed == false
+          conf_printed = '0'
+        else
+          conf_printed = ''
+        end
+        params = {:email => username, :digest => digest, :status => status, :startdate => start_date, :enddate => end_date, :is_conf_printed => conf_printed}
         action_pack_status('/?do=getpacksbysender',params)
       end
     end
@@ -381,7 +388,7 @@ module PaczkomatyInpost
             :amount => item.css('amount').text,
             :posdesc => item.css('posdesc').text,
             :packcode => item.css('packcode').text,
-            :transactiondate => item.css('transactiondate').text
+            :transactiondate => item.css('transactiondate').text.empty? ? '' : Time.parse(item.css('transactiondate').text)
           }
           payments[item.css('packcode').text] = payment
         end
@@ -395,17 +402,18 @@ module PaczkomatyInpost
       xml_packs = xml.css('pack')
       unless xml_packs.empty?
         xml_packs.each do |item|
+          next if item.css('packcode').text.empty?
           pack = {
             :packcode => item.css('packcode').text,
             :packsize => item.css('packsize').text,
             :amountcharged => item.css('amountcharged').text,
             :calculatedchargeamount => item.css('calculatedchargeamount').text,
-            :creationdate => item.css('creationdate').text,
-            :labelcreationtime => item.css('labelcreationtime').text,
+            :creationdate => item.css('creationdate').text.empty? ? '' : Time.parse(item.css('creationdate').text),
+            :labelcreationtime => item.css('labelcreationtime').text.empty? ? '' : Time.parse(item.css('labelcreationtime').text),
             :customerdeliveringcode => item.css('customerdeliveringcode').text,
             :status => item.css('status').text,
-            :is_conf_printed => item.css('is_conf_printed').text,
-            :labelprinted => item.css('labelprinted').text,
+            :is_conf_printed => (item.css('is_conf_printed').text.present? && item.css('is_conf_printed').text == '1') ? true : false,
+            :labelprinted => (item.css('labelprinted').text.present? && item.css('labelprinted').text == '1') ? true : false,
             :receiveremail => item.css('receiveremail').text,
             :ondeliveryamount => item.css('ondeliveryamount').text,
             :preferedboxmachinename => item.css('preferedboxmachinename').text,

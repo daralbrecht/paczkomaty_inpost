@@ -627,7 +627,7 @@ describe PaczkomatyInpost::InpostAPI do
       # end
     end
 
-    # tests not finished - disconnects with api prevents testing
+
     context 'inpost_get_packs_by_sender' do
 
       it "should return error if given start and end date have more than 60 days of difference" do
@@ -643,6 +643,45 @@ describe PaczkomatyInpost::InpostAPI do
         response[@packcode].keys.should =~ [:alternativeboxmachinename, :amountcharged, :calculatedchargeamount, :creationdate,
           :customerdeliveringcode, :is_conf_printed, :labelcreationtime, :labelprinted, :ondeliveryamount, :packcode, :packsize,
           :preferedboxmachinename, :receiveremail, :status]
+      end
+
+      it "should return empty hash if no packs found by query" do
+        response = @api.inpost_get_packs_by_sender(:status => 'Sent')
+
+        response.should == {}
+      end
+
+      it "should return packs with all statuses if wrong status given" do
+        response = @api.inpost_get_packs_by_sender(:status => 'wrong status')
+
+        response.map{|z| z.last[:status]}.uniq.should include('Prepared', 'Created')
+      end
+
+      it "should return packs with all statuses if no status given" do
+        response = @api.inpost_get_packs_by_sender
+
+        response.map{|z| z.last[:status]}.uniq.should include('Prepared', 'Created')
+      end
+
+      it "should return packs with only selected status if valid status given" do
+        response = @api.inpost_get_packs_by_sender(:status => 'Prepared')
+
+        response.map{|z| z.last[:status]}.uniq.should include('Prepared')
+        response.map{|z| z.last[:status]}.uniq.should_not include('CustomerDelivering', 'Created', 'Cancelled', 'LabelExpired')
+      end
+
+      it "should return packs with confirmation printed set to true if is_conf_printed set to true" do
+        response = @api.inpost_get_packs_by_sender(:is_conf_printed => true)
+
+        response.map{|z| z.last[:is_conf_printed]}.uniq.should include(true)
+        response.map{|z| z.last[:is_conf_printed]}.uniq.should_not include(false)
+      end
+
+      it "should return packs with confirmation printed set to false if is_conf_printed not set" do
+        response = @api.inpost_get_packs_by_sender
+
+        response.map{|z| z.last[:is_conf_printed]}.uniq.should include(false)
+        response.map{|z| z.last[:is_conf_printed]}.uniq.should_not include(true)
       end
     end
 
