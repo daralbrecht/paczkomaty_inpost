@@ -332,6 +332,7 @@ module PaczkomatyInpost
     private
 
     def get_response(params)
+      params = URI.escape(params)
       uri = URI.parse("#{PaczkomatyInpost.inpost_api_url}#{params}")
       begin
         response = Net::HTTP.get_response(uri)
