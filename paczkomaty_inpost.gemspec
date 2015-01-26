@@ -24,4 +24,5 @@ Gem::Specification.new do |gem|
   gem.add_dependency 'json'
   gem.add_dependency 'activemodel'
   gem.add_dependency 'rack'
+  gem.add_dependency 'iconv'
 end
